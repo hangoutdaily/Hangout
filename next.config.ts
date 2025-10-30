@@ -7,8 +7,13 @@ const nextConfig: NextConfig = {
         protocol: "https",
         hostname: "i.pravatar.cc",
       },
+      {
+        protocol: "https",
+        hostname: "images.unsplash.com",
+      },
     ],
   },
+  devIndicators: false,
 };
 
 export default nextConfig;

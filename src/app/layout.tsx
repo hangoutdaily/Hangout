@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import Header from "@/components/layout/Header";
+import { ThemeProvider } from "@/contexts/ThemeContext";
 
 export const metadata: Metadata = {
   title: "Hangout",
@@ -20,8 +21,12 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
-        <Header />
-        {children}
+        <ThemeProvider>
+          <Header />
+          <main className="pb-16 md:pb-0">
+            {children}
+          </main>
+        </ThemeProvider>
       </body>
     </html>
   );
