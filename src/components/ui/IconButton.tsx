@@ -8,7 +8,7 @@ interface IconButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 export default function IconButton({ icon, className = "", ...props }: IconButtonProps) {
   return (
     <button
-      className={`p-2 rounded-full hover:bg-gray-100 transition ${className}`}
+      className={`p-2 rounded-full hover:bg-surface transition-colors ${className}`}
       {...props}
     >
       {icon}

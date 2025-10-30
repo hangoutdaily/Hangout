@@ -10,7 +10,7 @@ export default function SearchBar() {
         <input
           type="text"
           placeholder="Search for events, people, or places"
-          className="w-full rounded-lg border border-border bg-surface pl-10 pr-4 py-2 text-sm text-foreground placeholder-muted focus:outline-none focus:ring-2 focus:ring-foreground/20"
+          className="w-full rounded-lg border border-border bg-input pl-10 pr-4 py-2 text-sm text-foreground placeholder-muted focus:outline-none focus:ring-2 focus:ring-ring focus:border-accent"
         />
       </div>
     </div>
