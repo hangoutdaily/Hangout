@@ -269,26 +269,70 @@ export default function CategoryFilters() {
       </div>
 
       {/* Selected summary */}
-      <div className="mt-3 flex flex-wrap gap-2">
-        {selectedTypes.map(tag => (
-          <span
-            key={tag}
-            className="rounded-full bg-accent/15 text-foreground px-3 py-1 text-xs"
+    {/* Selected summary */}
+{(selectedTypes.length > 0 || selectedDate || selectedDurationMin !== null) && (
+  <div className="mt-4 flex flex-wrap items-center gap-2 pb-2">
+    {selectedTypes.map(tag => {
+      const type = typeOptions.find(t => t.value === tag);
+      const Icon = type?.icon;
+      return (
+        <div
+          key={tag}
+          className="flex items-center gap-2 rounded-full bg-accent/10 px-3 py-1.5 text-sm text-foreground border border-accent/20 shadow-sm hover:shadow-md transition-all"
+        >
+          {Icon && <Icon className="h-4 w-4 opacity-80" />}
+          <span>{type?.label ?? tag}</span>
+          <button
+            onClick={() =>
+              setSelectedTypes(prev => prev.filter(v => v !== tag))
+            }
+            className="ml-1 hover:text-accent-foreground/80 transition"
           >
-            {tag}
-          </span>
-        ))}
-        {selectedDate && (
-          <span className="rounded-full bg-accent/15 text-foreground px-3 py-1 text-xs">
-            {selectedDate}
-          </span>
-        )}
-        {selectedDurationMin !== null && (
-          <span className="rounded-full bg-accent/15 text-foreground px-3 py-1 text-xs">
-            {selectedDurationMin}m
-          </span>
-        )}
+            ×
+          </button>
+        </div>
+      );
+    })}
+
+    {selectedDate && (
+      <div className="flex items-center gap-2 rounded-full bg-accent/10 px-3 py-1.5 text-sm text-foreground border border-accent/20 shadow-sm hover:shadow-md transition-all">
+        <Calendar className="h-4 w-4 opacity-80" />
+        <span>{selectedDate}</span>
+        <button
+          onClick={() => setSelectedDate("")}
+          className="ml-1 hover:text-accent-foreground/80 transition"
+        >
+          ×
+        </button>
       </div>
+    )}
+
+    {selectedDurationMin !== null && (
+      <div className="flex items-center gap-2 rounded-full bg-accent/10 px-3 py-1.5 text-sm text-foreground border border-accent/20 shadow-sm hover:shadow-md transition-all">
+        <Timer className="h-4 w-4 opacity-80" />
+        <span>{selectedDurationMin}m</span>
+        <button
+          onClick={() => setSelectedDurationMin(null)}
+          className="ml-1 hover:text-accent-foreground/80 transition"
+        >
+          ×
+        </button>
+      </div>
+    )}
+
+    {/* Clear all button */}
+    <button
+      onClick={() => {
+        setSelectedTypes([]);
+        setSelectedDate("");
+        setSelectedDurationMin(null);
+      }}
+      className="ml-2 text-sm text-foreground/60 hover:text-accent transition font-medium"
+    >
+      Clear all
+    </button>
+  </div>
+)}
     </div>
   );
 }
