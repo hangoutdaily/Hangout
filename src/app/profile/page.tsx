@@ -135,22 +135,10 @@ const mockReviews = [
 ];
 
 export default function ProfilePage() {
-  const [activeTab, setActiveTab] = useState<"photos" | "events" | "reviews">("photos");
+  const [activeTab, setActiveTab] = useState<"photos" | "events" | "reviews">("events");
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="sticky top-0 z-50 bg-background border-b border-border">
-        <div className="mx-auto max-w-7xl px-4 py-4">
-          <div className="flex items-center justify-between">
-            <h1 className="text-xl font-semibold text-foreground">Profile Page</h1>
-            <div className="flex items-center gap-2">
-              <button className="p-2 rounded-full hover:bg-surface transition-colors">
-                <Settings className="h-5 w-5 text-foreground" />
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
 
       <div className="mx-auto max-w-7xl px-4 py-6">
         <div className="relative mb-8">
@@ -185,23 +173,24 @@ export default function ProfilePage() {
               <MapPin className="h-4 w-4 mr-2" />
               <span>{mockUser.location}</span>
             </div>
-
-            <div className="flex gap-2">
+            {/* TODO: will see if we really needed this */}
+            {/* <div className="flex gap-2">
               {mockUser.socialMedia.map((social, index) => (
                 <button
                   key={index}
                   className="w-8 h-8 bg-surface border border-border rounded flex items-center justify-center hover:bg-accent hover:text-background transition-colors"
                 >
-                  <span className="text-xs font-medium">{social.platform[0]}</span>
+                  <span className="text-xs font-medium">{social.platform}</span>
                 </button>
               ))}
-            </div>
+            </div> */}
           </div>
         </div>
 
         <div className="border-b border-border mb-6">
           <nav className="flex space-x-8">
-            <button
+            {/* TODO: will see if we really needed this */}
+            {/* <button
               onClick={() => setActiveTab("photos")}
               className={`py-2 px-1 border-b-2 font-medium text-sm ${
                 activeTab === "photos"
@@ -210,7 +199,7 @@ export default function ProfilePage() {
               }`}
             >
               Photos
-            </button>
+            </button> */}
             <button
               onClick={() => setActiveTab("events")}
               className={`py-2 px-1 border-b-2 font-medium text-sm ${
@@ -219,7 +208,7 @@ export default function ProfilePage() {
                   : "border-transparent text-muted hover:text-foreground"
               }`}
             >
-              Events
+              Hangouts
             </button>
             <button
               onClick={() => setActiveTab("reviews")}
@@ -344,27 +333,6 @@ export default function ProfilePage() {
           </div>
         )}
       </div>
-
-      <nav className="fixed bottom-0 left-0 right-0 border-t border-border bg-background md:hidden z-40">
-        <div className="relative flex justify-around items-center h-16">
-          <Link href="/" className="flex flex-col items-center text-xs text-muted hover:text-foreground transition-colors py-2">
-            <div className="w-6 h-6 rounded-full border-2 border-foreground mb-1"></div>
-            Home
-          </Link>
-          <Link href="/create" className="flex flex-col items-center text-xs text-muted hover:text-foreground transition-colors py-2">
-            <div className="w-6 h-6 rounded-full border-2 border-foreground mb-1"></div>
-            Create
-          </Link>
-          <Link href="/profile" className="flex flex-col items-center text-xs text-foreground transition-colors py-2">
-            <div className="w-6 h-6 rounded-full border-2 border-accent bg-accent mb-1"></div>
-            My Space
-          </Link>
-          <Link href="/chats" className="flex flex-col items-center text-xs text-muted hover:text-foreground transition-colors py-2">
-            <div className="w-6 h-6 rounded-full border-2 border-foreground mb-1"></div>
-            Chats
-          </Link>
-        </div>
-      </nav>
     </div>
   );
 }
