@@ -46,7 +46,7 @@ export default function Header() {
   ];
 
   return (
-    <header className="w-full bg-background top-0 z-50 border-b border-border">
+    <header className="w-full bg-background top-0 z-50 border-border">
       <div className="flex items-center justify-between h-14 px-4 md:hidden">
         <Link href="/" className="text-lg font-bold text-foreground">
           Hangout
