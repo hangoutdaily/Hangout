@@ -87,7 +87,7 @@ export default function CreateEventPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="sticky top-0 z-50 bg-background border-b border-border">
+      {/* <div className="sticky top-0 z-50 bg-background border-b border-border">
         <div className="mx-auto max-w-7xl px-4 py-4">
           <div className="flex items-center justify-between">
             <Link href="/" className="flex items-center text-foreground hover:text-accent transition-colors">
@@ -99,12 +99,12 @@ export default function CreateEventPage() {
             </div>
           </div>
         </div>
-      </div>
+      </div> */}
 
       <div className="mx-auto max-w-7xl px-4 py-8">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-foreground mb-2">Create Your Event</h1>
-          <p className="text-muted">Share your passion and connect with like-minded people</p>
+          <h1 className="text-3xl font-bold text-foreground mb-2">Create Hangout</h1>
+          <p className="text-muted">Share your passion and meet lovely people.</p>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -125,17 +125,17 @@ export default function CreateEventPage() {
                     </div>
                     <div>
                       <h2 className="text-xl font-semibold text-foreground">Basic Information</h2>
-                      <p className="text-muted">Tell us about your event</p>
+                      <p className="text-muted">Tell us about your hangout</p>
                     </div>
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-foreground mb-2">Event Title *</label>
+                    <label className="block text-sm font-medium text-foreground mb-2">Title *</label>
                     <input
                       value={form.title}
                       onChange={(e) => setForm({ ...form, title: e.target.value })}
                       className="w-full border border-border rounded-lg px-4 py-3 bg-input text-foreground placeholder-muted focus:outline-none focus:ring-2 focus:ring-ring focus:border-accent transition-all"
-                      placeholder="e.g., Tech Meetup & Networking"
+                      placeholder="e.g., Sunday Brunch and Gossips"
                       required
                     />
                     {errors.title && <p className="mt-1 text-xs text-destructive">{errors.title}</p>}
@@ -161,7 +161,7 @@ export default function CreateEventPage() {
                       value={form.description}
                       onChange={(e) => setForm({ ...form, description: e.target.value })}
                       className="w-full border border-border rounded-lg px-4 py-3 h-32 resize-none bg-input text-foreground placeholder-muted focus:outline-none focus:ring-2 focus:ring-ring focus:border-accent transition-all"
-                      placeholder="Describe what attendees can expect from your event..."
+                      placeholder="Describe what people can expect from this hangout..."
                       required
                     />
                     <p className="text-xs text-muted mt-1">Be specific about what will happen and what attendees should bring</p>

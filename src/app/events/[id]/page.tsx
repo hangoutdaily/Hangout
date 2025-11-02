@@ -71,7 +71,7 @@ export default function EventDetail({ params }: EventDetailProps) {
           <div className="flex items-center justify-between">
             <Link href="/" className="flex items-center text-foreground hover:text-accent transition-colors">
               <ArrowLeft className="h-5 w-5 mr-2" />
-              Back to Events
+              Back
             </Link>
             <div className="flex items-center gap-4">
               <button
