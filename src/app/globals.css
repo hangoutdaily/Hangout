@@ -1,4 +1,4 @@
-@import "tailwindcss";
+@import 'tailwindcss';
 
 :root {
   --background: #ffffff;
@@ -32,7 +32,7 @@
   --radius: 0.5rem;
 }
 
-[data-theme="dark"] {
+[data-theme='dark'] {
   --background: #000000;
   --foreground: #ffffff;
   --muted: #9ca3af;
@@ -118,11 +118,10 @@ body {
   -webkit-line-clamp: 2;
 }
 
-.no-scrollbar {
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-hide {
   -ms-overflow-style: none;
   scrollbar-width: none;
-}
-
-.no-scrollbar::-webkit-scrollbar {
-  display: none;
 }
