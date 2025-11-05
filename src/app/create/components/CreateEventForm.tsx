@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Calendar, MapPin, Tag, Users, CheckCircle2 } from 'lucide-react';
+import { Calendar, MapPin, Tag, CheckCircle2 } from 'lucide-react';
 import FormCard from './FormCard';
 import Field from './Field';
 

@@ -1,21 +1,21 @@
-"use client";
+'use client';
 
-import { useState, useRef, useEffect } from "react";
-import { Sun, Moon, Monitor, ChevronDown } from "lucide-react";
-import { useTheme } from "@/contexts/ThemeContext";
+import { useState, useRef, useEffect } from 'react';
+import { Sun, Moon, Monitor, ChevronDown } from 'lucide-react';
+import { useTheme } from '@/contexts/ThemeContext';
 
 export default function ThemeToggle() {
-  const { theme, setTheme, actualTheme } = useTheme();
+  const { theme, setTheme } = useTheme();
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   const themes = [
-    { value: "light", label: "Light", icon: Sun },
-    { value: "dark", label: "Dark", icon: Moon },
-    { value: "system", label: "System", icon: Monitor },
+    { value: 'light', label: 'Light', icon: Sun },
+    { value: 'dark', label: 'Dark', icon: Moon },
+    { value: 'system', label: 'System', icon: Monitor },
   ];
 
-  const currentTheme = themes.find(t => t.value === theme) || themes[0];
+  const currentTheme = themes.find((t) => t.value === theme) || themes[0];
   const CurrentIcon = currentTheme.icon;
 
   useEffect(() => {
@@ -25,9 +25,9 @@ export default function ThemeToggle() {
       }
     }
 
-    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener('mousedown', handleClickOutside);
     return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener('mousedown', handleClickOutside);
     };
   }, []);
 
@@ -42,7 +42,9 @@ export default function ThemeToggle() {
         <span className="text-sm font-medium text-foreground hidden sm:inline">
           {currentTheme.label}
         </span>
-        <ChevronDown className={`h-4 w-4 text-muted transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+        <ChevronDown
+          className={`h-4 w-4 text-muted transition-transform ${isOpen ? 'rotate-180' : ''}`}
+        />
       </button>
 
       {isOpen && (
@@ -51,12 +53,12 @@ export default function ThemeToggle() {
             {themes.map((themeOption) => {
               const Icon = themeOption.icon;
               const isSelected = theme === themeOption.value;
-              
+
               return (
                 <button
                   key={themeOption.value}
                   onClick={() => {
-                    setTheme(themeOption.value as "light" | "dark" | "system");
+                    setTheme(themeOption.value as 'light' | 'dark' | 'system');
                     setIsOpen(false);
                   }}
                   className={`w-full flex items-center gap-3 px-4 py-2 text-left hover:bg-surface transition-colors ${
@@ -65,9 +67,7 @@ export default function ThemeToggle() {
                 >
                   <Icon className="h-4 w-4" />
                   <span className="text-sm font-medium">{themeOption.label}</span>
-                  {isSelected && (
-                    <div className="ml-auto w-2 h-2 rounded-full bg-accent" />
-                  )}
+                  {isSelected && <div className="ml-auto w-2 h-2 rounded-full bg-accent" />}
                 </button>
               );
             })}
