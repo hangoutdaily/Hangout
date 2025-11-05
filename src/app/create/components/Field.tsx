@@ -1,6 +1,24 @@
 'use client';
 
-import { useId } from 'react';
+import { useId, ReactNode, ChangeEvent } from 'react';
+
+type FieldType = 'text' | 'textarea' | 'select' | 'number' | 'date' | 'time';
+
+interface FieldProps {
+  label: string;
+  value: string;
+  onChange: (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => void;
+  placeholder?: string;
+  error?: string;
+  type?: FieldType;
+  icon?: React.ElementType;
+  options?: string[];
+  min?: string | number;
+  max?: string | number;
+  step?: string | number;
+  className?: string;
+  children?: ReactNode;
+}
 
 export default function Field({
   label,
@@ -12,7 +30,7 @@ export default function Field({
   icon: Icon,
   options,
   ...rest
-}: any) {
+}: FieldProps) {
   const id = useId();
   const hasError = Boolean(error);
 
@@ -34,6 +52,7 @@ export default function Field({
           className={`${baseClass} h-28 resize-y ${
             hasError ? 'border-destructive' : 'border-border focus:border-accent'
           }`}
+          {...rest}
         />
       ) : type === 'select' ? (
         <select
@@ -43,9 +62,10 @@ export default function Field({
           className={`${baseClass} ${
             hasError ? 'border-destructive' : 'border-border focus:border-accent'
           }`}
+          {...rest}
         >
-          <option value="">Select category</option>
-          {options?.map((opt: string) => (
+          <option value="">Select option</option>
+          {options?.map((opt) => (
             <option key={opt} value={opt}>
               {opt}
             </option>
