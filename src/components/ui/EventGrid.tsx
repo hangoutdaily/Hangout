@@ -15,7 +15,7 @@ const mockEvents = [
     maxAttendees: 2000,
     category: "Concerts",
     price: 40.23,
-    priceType: "paid" as const,
+    priceType: "free" as const,
     creator: {
       name: "Sarah Johnson",
       avatar: "https://i.pravatar.cc/40?img=1"
