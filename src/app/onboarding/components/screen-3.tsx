@@ -9,9 +9,10 @@ import { useState } from "react"
 interface Screen3Props {
   data: any
   onChange: (data: any) => void
+  errors?: Record<string, string>
 }
 
-export function Screen3({ data, onChange }: Screen3Props) {
+export function Screen3({ data, onChange, errors = {} }: Screen3Props) {
   const [verificationMode, setVerificationMode] = useState(false)
   const [activeSocialLinks, setActiveSocialLinks] = useState<Record<string, boolean>>({
     instagram: !!data.socialLinks?.instagram,
@@ -76,10 +77,14 @@ export function Screen3({ data, onChange }: Screen3Props) {
             ].map((item) => (
               <div key={item.field} className="space-y-2">
                 <Label htmlFor={item.field} className="text-sm font-medium text-foreground">
-                  {item.label}
+                  {item.label} <span className="text-red-500">*</span>
                 </Label>
                 <Select value={data[item.field]} onValueChange={(value) => handleChange(item.field, value)}>
-                  <SelectTrigger className="w-full bg-background border-border text-foreground focus:border-foreground transition-colors h-12 text-base">
+                  <SelectTrigger
+                    className={`w-full bg-background text-foreground focus:border-foreground transition-colors h-12 text-base ${
+                      errors[item.field] ? "border-red-500 focus:border-red-500" : "border-border"
+                    }`}
+                  >
                     <SelectValue placeholder="Select" />
                   </SelectTrigger>
                   <SelectContent>
@@ -90,6 +95,7 @@ export function Screen3({ data, onChange }: Screen3Props) {
                     ))}
                   </SelectContent>
                 </Select>
+                {errors[item.field] && <p className="text-xs text-red-500">{errors[item.field]}</p>}
               </div>
             ))}
           </div>
@@ -98,7 +104,9 @@ export function Screen3({ data, onChange }: Screen3Props) {
         {/* Photos Section */}
         <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <Label className="text-lg font-medium text-foreground">Add photos</Label>
+            <Label className="text-lg font-medium text-foreground">
+              Add photos <span className="text-red-500">*</span>
+            </Label>
             <span className="text-xs font-medium text-muted-foreground">{data.photos.length}/5</span>
           </div>
           <p className="text-xs text-muted-foreground">
@@ -120,11 +128,14 @@ export function Screen3({ data, onChange }: Screen3Props) {
               </button>
             ))}
           </div>
+          {errors.photos && <p className="text-xs text-red-500">{errors.photos}</p>}
         </div>
 
         {/* Selfie Verification */}
         <div className="space-y-4">
-          <Label className="text-lg font-medium text-foreground">Verify your identity</Label>
+          <Label className="text-lg font-medium text-foreground">
+            Verify your identity <span className="text-red-500">*</span>
+          </Label>
           <p className="text-xs text-muted-foreground">
             Quick 30-second selfie verification. Verified profiles get more visibility
           </p>
@@ -145,6 +156,7 @@ export function Screen3({ data, onChange }: Screen3Props) {
               {verificationMode ? "Take a photo for verification" : "Click to start verification"}
             </p>
           </button>
+          {errors.selfie && <p className="text-xs text-red-500">{errors.selfie}</p>}
         </div>
 
         <div className="space-y-4">
