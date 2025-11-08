@@ -1,9 +1,7 @@
-"use client"
+'use client';
 
-import { OnboardingContainer } from "@/components/ui/onboarding-container";
+import { OnboardingContainer } from '@/components/ui/OnboardingContainer';
 
 export default function Home() {
-  return (
-    <OnboardingContainer />
-  );
+  return <OnboardingContainer />;
 }

@@ -4,8 +4,9 @@ import { usePathname } from 'next/navigation';
 import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { MapPin, Bell, Home, Users, MessageCircle, Heart, PlusSquare, Search } from 'lucide-react';
-import Avatar from '@/components/ui/Avatar';
 import ThemeToggle from '@/components/ui/ThemeToggle';
+import { cn } from '@/lib/utils';
+import { Avatar, AvatarFallback, AvatarImage } from '../ui/shadcn/avatar';
 
 export default function Header() {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
@@ -23,9 +24,7 @@ export default function Header() {
     if (isProfileOpen) {
       document.addEventListener('mousedown', handleClickOutside);
     }
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
+    return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [isProfileOpen]);
 
   const desktopNav = [
@@ -42,7 +41,7 @@ export default function Header() {
   ];
 
   return (
-    <header className="w-full bg-background top-0 z-50 border-border">
+    <header className="sticky top-0 z-50 w-full bg-background">
       <div className="flex items-center justify-between h-14 px-4 md:hidden">
         <Link href="/" className="text-lg font-bold text-foreground">
           Hangout
@@ -54,7 +53,8 @@ export default function Header() {
         </div>
 
         <button
-          className="p-2 rounded-md hover:bg-surface transition-colors"
+          aria-label="Notifications"
+          className="p-2 rounded-md hover:bg-accent/10 transition"
           onClick={() => setIsProfileOpen(!isProfileOpen)}
         >
           <Bell className="h-5 w-5 text-foreground" />
@@ -74,11 +74,11 @@ export default function Header() {
 
         <div className="flex-1 flex justify-center max-w-lg">
           <div className="relative w-full">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <input
               type="text"
               placeholder="Search all events..."
-              className="w-full rounded-lg border border-border bg-surface pl-10 pr-4 py-1.5 text-foreground placeholder-muted focus:border-accent focus:ring-1 focus:ring-accent focus:outline-none transition-all"
+              className="w-full rounded-lg border border-border bg-surface pl-10 pr-4 py-1.5 text-foreground placeholder:text-muted-foreground transition-all"
             />
           </div>
         </div>
@@ -92,8 +92,8 @@ export default function Header() {
             ))}
             <Link
               href="/wishlist"
-              className="hover:text-foreground transition-colors flex items-center"
               title="Wishlist"
+              className="hover:text-foreground transition-colors"
             >
               <Heart className="h-5 w-5" />
             </Link>
@@ -101,18 +101,26 @@ export default function Header() {
 
           <button
             onClick={() => setIsProfileOpen(!isProfileOpen)}
-            className="relative flex items-center gap-2 p-1 rounded-lg hover:bg-surface transition-colors"
+            aria-haspopup="menu"
+            aria-expanded={isProfileOpen}
+            className="relative flex items-center gap-2 p-1 rounded-lg hover:bg-accent/10 transition"
           >
-            <Avatar src="https://i.pravatar.cc/40" alt="User" size="sm" />
+            <Avatar>
+              <AvatarImage src="https://i.pravatar.cc/40" />
+              <AvatarFallback>User</AvatarFallback>
+            </Avatar>
           </button>
 
           {isProfileOpen && (
-            <div className="absolute right-0 top-14 w-64 bg-popover border border-border rounded-lg shadow-lg z-50 animate-in fade-in slide-in-from-top-2">
+            <div className="absolute right-0 top-14 w-64 bg-popover border border-border rounded-lg shadow-md z-50 animate-in fade-in slide-in-from-top-2">
               <div className="p-4 border-b border-border flex items-center gap-3">
-                <Avatar src="https://i.pravatar.cc/40" alt="User" size="md" />
+                <Avatar>
+                  <AvatarImage src="https://i.pravatar.cc/40" />
+                  <AvatarFallback>User</AvatarFallback>
+                </Avatar>
                 <div>
                   <p className="font-medium text-popover-foreground">User Name</p>
-                  <p className="text-sm text-muted">user@example.com</p>
+                  <p className="text-sm text-muted-foreground">user@example.com</p>
                 </div>
               </div>
               <div className="p-4 space-y-3">
@@ -126,14 +134,14 @@ export default function Header() {
                   <Link
                     href="/profile"
                     onClick={() => setIsProfileOpen(false)}
-                    className="block px-3 py-2 text-sm text-popover-foreground hover:bg-surface rounded-lg transition-colors"
+                    className="block px-3 py-2 text-sm text-popover-foreground hover:bg-accent/10 rounded-md transition"
                   >
                     View Profile
                   </Link>
-                  <button className="block w-full text-left px-3 py-2 text-sm text-popover-foreground hover:bg-surface rounded-lg transition-colors">
+                  <button className="block w-full text-left px-3 py-2 text-sm text-popover-foreground hover:bg-accent/10 rounded-md transition">
                     Settings
                   </button>
-                  <button className="block w-full text-left px-3 py-2 text-sm text-destructive hover:bg-surface rounded-lg transition-colors">
+                  <button className="block w-full text-left px-3 py-2 text-sm text-destructive hover:bg-accent/10 rounded-md transition">
                     Sign Out
                   </button>
                 </div>
@@ -146,11 +154,11 @@ export default function Header() {
       {isHome && (
         <div className="md:hidden px-4 pb-3">
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
             <input
               type="text"
               placeholder="Search all events..."
-              className="w-full rounded-xl border border-border bg-surface pl-10 pr-3 py-3 text-foreground placeholder-muted focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent/50 transition-all"
+              className="w-full rounded-xl border border-border bg-surface pl-10 pr-3 py-3 text-foreground placeholder:text-muted-foreground focus:outline-none transition-all"
             />
           </div>
         </div>
@@ -162,9 +170,12 @@ export default function Header() {
             <Link
               key={href}
               href={href}
-              className={`flex flex-col items-center justify-center flex-1 text-xs py-2 transition-colors ${
-                pathname === href ? 'text-foreground' : 'text-muted hover:text-foreground'
-              }`}
+              className={cn(
+                'flex flex-col items-center justify-center flex-1 text-xs py-2 transition',
+                pathname === href
+                  ? 'text-foreground'
+                  : 'text-muted-foreground hover:text-foreground'
+              )}
             >
               <Icon className="h-5 w-5 mb-1 shrink-0" />
               <span className="truncate text-[11px]">{label}</span>

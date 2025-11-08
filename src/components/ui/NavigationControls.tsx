@@ -1,16 +1,16 @@
-"use client"
+'use client';
 
-import { Button } from "@/components/ui/shadcn/button"
-import { ChevronLeft, ChevronRight } from "lucide-react"
-import { motion } from "framer-motion"
+import { Button } from '@/components/ui/shadcn/button';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { motion } from 'framer-motion';
 
 interface NavigationControlsProps {
-  currentScreen: number
-  totalScreens: number
-  onNext: () => void
-  onPrev: () => void
-  onSubmit: () => void
-  isValid?: boolean
+  currentScreen: number;
+  totalScreens: number;
+  onNext: () => void;
+  onPrev: () => void;
+  onSubmit: () => void;
+  isValid?: boolean;
 }
 
 export function NavigationControls({
@@ -21,8 +21,8 @@ export function NavigationControls({
   onSubmit,
   isValid = true,
 }: NavigationControlsProps) {
-  const isLastScreen = currentScreen === totalScreens - 1
-  const isFirstScreen = currentScreen === 0
+  const isLastScreen = currentScreen === totalScreens - 1;
+  const isFirstScreen = currentScreen === 0;
 
   return (
     <div className="border-t border-border bg-background p-4 sticky bottom-0">
@@ -64,5 +64,5 @@ export function NavigationControls({
         </motion.div>
       </div>
     </div>
-  )
+  );
 }
