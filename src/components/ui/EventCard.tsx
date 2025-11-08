@@ -50,10 +50,8 @@ export default function EventCard({
       href={`/events/${id}`}
       className="block rounded-xl overflow-hidden border border-border bg-card hover:shadow-md hover:border-accent/30 transition-all duration-300"
     >
-
-      {/* DATE + TIME + LIKE */}
       <div className="px-5 pt-4 pb-3 flex items-center justify-between">
-        <div className="flex items-center gap-4 text-sm font-semibold flex-1">
+        <div className="flex items-center gap-4 text-sm text-muted flex-1">
           <div className="flex items-center gap-2">
             <Calendar className="h-4 w-4" />
             <span>{date}</span>
@@ -71,15 +69,10 @@ export default function EventCard({
           }}
           className="p-1.5 rounded-lg hover:bg-accent/10 transition-colors"
         >
-          <Heart
-            className={`h-5 w-5 ${
-              isLiked ? 'text-red-500 fill-red-500' : 'text-muted'
-            }`}
-          />
+          <Heart className={`h-5 w-5 ${isLiked ? 'text-red-500 fill-red-500' : 'text-muted'}`} />
         </button>
       </div>
 
-      {/* TITLE + DESC */}
       <div className="px-5 pb-3">
         <h3 className="font-semibold text-foreground text-lg mb-1 line-clamp-1 group-hover:text-accent transition-colors">
           {title}
@@ -87,24 +80,24 @@ export default function EventCard({
         <p className="text-muted text-sm line-clamp-2 leading-relaxed">{description}</p>
       </div>
 
-      {/* LOCATION + JOIN COUNT */}
       <div className="px-5 py-3 space-y-2.5 border-b border-gray-100">
-          <div className="flex items-center gap-3 text-sm">
-            <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-gray-100">
-              <MapPin className="h-4 w-4 text-gray-700" />
-            </div>
-            <span className="truncate">{location}</span>
+        <div className="flex items-center gap-3 text-sm">
+          <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-gray-100">
+            <MapPin className="h-4 w-4 text-gray-700" />
           </div>
+          <span className="truncate">{location}</span>
+        </div>
 
-          <div className="flex items-center gap-3 text-sm">
-            <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-gray-100">
-              <Users className="h-4 w-4 text-gray-700" />
-            </div>
-            <span className="font-medium">{attendees}/{maxAttendees} Joined</span>
+        <div className="flex items-center gap-3 text-sm">
+          <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-gray-100">
+            <Users className="h-4 w-4 text-gray-700" />
           </div>
+          <span className="font-medium">
+            {attendees}/{maxAttendees} Joined
+          </span>
+        </div>
       </div>
 
-      {/* HOST + JOIN BUTTON */}
       <div className="px-5 py-4 flex items-center justify-between border-t border-border/50">
         <div className="flex items-center gap-2">
           <Image
@@ -131,16 +124,13 @@ export default function EventCard({
         </button>
       </div>
 
-      {/* CATEGORY + PRICE */}
       <div className="px-5 py-3 flex items-center justify-between border-t border-border/50 text-xs">
         <div className="flex items-center gap-1 text-muted">
           <Zap className="h-3 w-3 text-accent" />
           {category}
         </div>
 
-        <span className="font-medium text-foreground">
-          {formatPrice()}
-        </span>
+        <span className="font-medium text-foreground">{formatPrice()}</span>
       </div>
     </Link>
   );

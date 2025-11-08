@@ -1,4 +1,4 @@
-import EventDetailClient from './EventDetailClient';
+import EventDetailClient from './components/EventDetailClient';
 
 export default async function EventDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;

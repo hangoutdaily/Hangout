@@ -3,7 +3,7 @@
 import { motion } from 'framer-motion';
 import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
-import CreateEventForm from './components/CreateEventForm';
+import CreateEventForm from './CreateEventForm';
 
 export default function CreateEventPage() {
   return (
@@ -28,7 +28,7 @@ export default function CreateEventPage() {
           className="text-center mb-10"
         >
           <h1 className="text-3xl font-bold text-foreground mb-2">Create Hangout</h1>
-          <p className="text-muted">Share your passion and meet lovely people.</p>
+          <p className="text-muted-foreground">Share your passion and meet lovely people.</p>
         </motion.div>
 
         <CreateEventForm />
