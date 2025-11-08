@@ -1,13 +1,10 @@
 'use client';
 
 import { useState } from 'react';
-import EventCard from '@/components/ui/EventCard';
-import { MapPin, Edit, Star, MessageCircle, Heart, Share2 } from 'lucide-react';
 import Image from 'next/image';
-
-/* -------------------------------------------------------------------------- */
-/*                                   TYPES                                   */
-/* -------------------------------------------------------------------------- */
+import { MapPin, Edit, Star } from 'lucide-react';
+import EventCard from '@/components/ui/EventCard';
+import { cn } from '@/lib/utils';
 
 interface SocialMediaLink {
   platform: string;
@@ -21,16 +18,6 @@ interface UserProfile {
   avatar: string;
   coverPhoto: string;
   socialMedia: SocialMediaLink[];
-}
-
-interface PhotoPost {
-  id: string;
-  type: 'image' | 'text';
-  image?: string;
-  title?: string;
-  content?: string;
-  likes: number;
-  comments: number;
 }
 
 interface Event {
@@ -59,10 +46,6 @@ interface Review {
   time: string;
 }
 
-/* -------------------------------------------------------------------------- */
-/*                                  MOCK DATA                                */
-/* -------------------------------------------------------------------------- */
-
 const mockUser: UserProfile = {
   name: 'Dhruv Patel',
   bio: 'Passionate about technology and community building. Love organizing events and meeting new people!',
@@ -73,43 +56,8 @@ const mockUser: UserProfile = {
     { platform: 'Twitter', url: '#' },
     { platform: 'Instagram', url: '#' },
     { platform: 'LinkedIn', url: '#' },
-    { platform: 'GitHub', url: '#' },
   ],
 };
-
-const mockPhotos: PhotoPost[] = [
-  {
-    id: '1',
-    type: 'image',
-    image: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=400&h=300&fit=crop',
-    title: 'Amazing concert last night!',
-    likes: 24,
-    comments: 8,
-  },
-  {
-    id: '2',
-    type: 'image',
-    image: 'https://images.unsplash.com/photo-1554118811-1e0d58224f24?w=400&h=300&fit=crop',
-    title: 'Coffee meetup was fantastic',
-    likes: 12,
-    comments: 5,
-  },
-  {
-    id: '3',
-    type: 'text',
-    content: 'Just finished organizing the tech talk event. Great turnout!',
-    likes: 18,
-    comments: 3,
-  },
-  {
-    id: '4',
-    type: 'image',
-    image: 'https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=400&h=300&fit=crop',
-    title: 'Morning yoga session',
-    likes: 15,
-    comments: 7,
-  },
-];
 
 const mockEventsHosted: Event[] = [
   {
@@ -144,7 +92,6 @@ const mockEventsAttended: Event[] = [
     time: '8:00 PM',
     attendees: 1200,
     maxAttendees: 2000,
-    image: undefined,
     category: 'Concerts',
     price: 40.23,
     priceType: 'paid',
@@ -185,15 +132,15 @@ const mockReviews: Review[] = [
 ];
 
 export default function ProfilePage() {
-  const [activeTab, setActiveTab] = useState<'events' | 'reviews' | 'photos'>('events');
+  const [activeTab, setActiveTab] = useState<'events' | 'reviews'>('events');
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="mx-auto max-w-7xl px-4 py-6">
-        <div className="relative mb-8">
+      <div className="mx-auto max-w-6xl px-4 py-8">
+        <div className="relative mb-10">
           <div className="relative h-48 md:h-64 rounded-2xl overflow-hidden">
-            <Image src={mockUser.coverPhoto} alt="Cover photo" fill className="object-cover" />
-            <button className="absolute top-4 right-4 p-2 bg-background/80 backdrop-blur-sm rounded-full hover:bg-background/90 transition-colors">
+            <Image src={mockUser.coverPhoto} alt="Cover" fill className="object-cover" />
+            <button className="absolute top-4 right-4 p-2 bg-background/80 backdrop-blur-sm rounded-full hover:bg-background transition">
               <Edit className="h-4 w-4 text-foreground" />
             </button>
           </div>
@@ -211,9 +158,9 @@ export default function ProfilePage() {
           </div>
 
           <div className="mt-4 ml-6">
-            <h2 className="text-2xl font-bold text-foreground mb-1">{mockUser.name}</h2>
-            <p className="text-muted mb-2">{mockUser.bio}</p>
-            <div className="flex items-center text-muted mb-4">
+            <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-1">{mockUser.name}</h2>
+            <p className="text-muted-foreground mb-2 max-w-xl">{mockUser.bio}</p>
+            <div className="flex items-center text-muted-foreground text-sm">
               <MapPin className="h-4 w-4 mr-2" />
               <span>{mockUser.location}</span>
             </div>
@@ -222,55 +169,38 @@ export default function ProfilePage() {
 
         <div className="border-b border-border mb-6">
           <nav className="flex space-x-8">
-            <button
-              onClick={() => setActiveTab('events')}
-              className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                activeTab === 'events'
-                  ? 'border-accent text-accent'
-                  : 'border-transparent text-muted hover:text-foreground'
-              }`}
-            >
-              Hangouts
-            </button>
-            <button
-              onClick={() => setActiveTab('reviews')}
-              className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                activeTab === 'reviews'
-                  ? 'border-accent text-accent'
-                  : 'border-transparent text-muted hover:text-foreground'
-              }`}
-            >
-              Reviews
-            </button>
+            {[
+              { key: 'events', label: 'Hangouts' },
+              { key: 'reviews', label: 'Reviews' },
+            ].map((tab) => (
+              <button
+                key={tab.key}
+                onClick={() => setActiveTab(tab.key as 'events' | 'reviews')}
+                className={cn(
+                  'py-2 px-1 border-b-2 font-medium text-sm transition-colors',
+                  activeTab === tab.key
+                    ? 'border-accent text-accent'
+                    : 'border-transparent text-muted-foreground hover:text-foreground'
+                )}
+              >
+                {tab.label}
+              </button>
+            ))}
           </nav>
         </div>
 
-        <div className="min-h-[400px]">
+        <div className="min-h-[400px] space-y-10">
           {activeTab === 'events' && (
-            <div className="space-y-8">
-              <div>
-                <h3 className="text-lg font-semibold text-foreground mb-3">Hosted</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {mockEventsHosted.map((evt) => (
-                    <EventCard key={evt.id} {...evt} />
-                  ))}
-                </div>
-              </div>
-              <div>
-                <h3 className="text-lg font-semibold text-foreground mb-3">Attended</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {mockEventsAttended.map((evt) => (
-                    <EventCard key={evt.id} {...evt} />
-                  ))}
-                </div>
-              </div>
-            </div>
+            <>
+              <EventSection title="Hosted" events={mockEventsHosted} />
+              <EventSection title="Attended" events={mockEventsAttended} />
+            </>
           )}
 
           {activeTab === 'reviews' && (
             <div className="space-y-4">
               {mockReviews.map((review) => (
-                <div key={review.id} className="bg-card-bg border border-border rounded-2xl p-6">
+                <div key={review.id} className="border border-border bg-card rounded-xl p-6">
                   <div className="flex items-start justify-between mb-3">
                     <div className="flex items-center">
                       <div className="w-10 h-10 rounded-full overflow-hidden mr-3">
@@ -288,23 +218,43 @@ export default function ProfilePage() {
                           {[...Array(5)].map((_, i) => (
                             <Star
                               key={i}
-                              className={`h-4 w-4 ${
-                                i < review.rating ? 'text-warning fill-warning' : 'text-muted'
-                              }`}
+                              className={cn(
+                                'h-4 w-4',
+                                i < review.rating
+                                  ? 'text-yellow-500 fill-yellow-500'
+                                  : 'text-muted-foreground'
+                              )}
                             />
                           ))}
                         </div>
                       </div>
                     </div>
-                    <p className="text-sm text-muted">{review.time}</p>
+                    <p className="text-xs text-muted-foreground">{review.time}</p>
                   </div>
-                  <p className="text-muted">{review.comment}</p>
+                  <p className="text-sm text-foreground/90 leading-relaxed">{review.comment}</p>
                 </div>
               ))}
             </div>
           )}
         </div>
       </div>
+    </div>
+  );
+}
+
+function EventSection({ title, events }: { title: string; events: Event[] }) {
+  return (
+    <div>
+      <h3 className="text-lg font-semibold text-foreground mb-3">{title}</h3>
+      {events.length === 0 ? (
+        <p className="text-sm text-muted-foreground">No events found.</p>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {events.map((evt) => (
+            <EventCard key={evt.id} {...evt} />
+          ))}
+        </div>
+      )}
     </div>
   );
 }
