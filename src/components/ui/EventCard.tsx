@@ -80,7 +80,7 @@ export default function EventCard({
         <p className="text-muted text-sm line-clamp-2 leading-relaxed">{description}</p>
       </div>
 
-      <div className="px-5 py-3 space-y-2.5 border-b border-gray-100">
+      <div className="px-5 py-3 space-y-2.5">
         <div className="flex items-center gap-3 text-sm">
           <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-gray-100">
             <MapPin className="h-4 w-4 text-gray-700" />
@@ -98,7 +98,7 @@ export default function EventCard({
         </div>
       </div>
 
-      <div className="px-5 py-4 flex items-center justify-between border-t border-border/50">
+      <div className="px-5 py-4 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Image
             src={creator.avatar}

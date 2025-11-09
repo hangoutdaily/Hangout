@@ -77,7 +77,7 @@ export default function Header() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <input
               type="text"
-              placeholder="Search all events..."
+              placeholder="Search Hangouts..."
               className="w-full rounded-lg border border-border bg-surface pl-10 pr-4 py-1.5 text-foreground placeholder:text-muted-foreground transition-all"
             />
           </div>
@@ -157,7 +157,7 @@ export default function Header() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
             <input
               type="text"
-              placeholder="Search all events..."
+              placeholder="Search Hangouts..."
               className="w-full rounded-xl border border-border bg-surface pl-10 pr-3 py-3 text-foreground placeholder:text-muted-foreground focus:outline-none transition-all"
             />
           </div>
