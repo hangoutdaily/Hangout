@@ -9,6 +9,7 @@ import { NavigationControls } from './NavigationControls';
 
 export function OnboardingContainer() {
   const [currentScreen, setCurrentScreen] = useState(0);
+  const [hasAttemptedSubmit, setHasAttemptedSubmit] = useState(false)
   const [formData, setFormData] = useState({
     // Screen 1
     fullName: '',
@@ -78,13 +79,16 @@ export function OnboardingContainer() {
   const handleFormChange = (newData: any) => {
     setFormData(newData);
     // Re-validate on every change to clear errors if field becomes valid
-    const newErrors = validateScreenRealtime(currentScreen, newData);
-    setValidationErrors(newErrors);
+    if (hasAttemptedSubmit) {
+      const errors = validateScreenRealtime(currentScreen, newData)
+      setValidationErrors(errors)
+    }
   };
 
   const validateScreen = (screenIndex: number): boolean => {
     const errors = validateScreenRealtime(screenIndex, formData);
     setValidationErrors(errors);
+    setHasAttemptedSubmit(true)
     return Object.keys(errors).length === 0;
   };
 
@@ -92,6 +96,7 @@ export function OnboardingContainer() {
     if (validateScreen(currentScreen)) {
       if (currentScreen < screens.length - 1) {
         setCurrentScreen(currentScreen + 1);
+        setHasAttemptedSubmit(false)
         setValidationErrors({});
       }
     }
@@ -100,6 +105,8 @@ export function OnboardingContainer() {
   const handlePrev = () => {
     if (currentScreen > 0) {
       setCurrentScreen(currentScreen - 1);
+      setHasAttemptedSubmit(false)
+      setValidationErrors({})
     }
   };
 
