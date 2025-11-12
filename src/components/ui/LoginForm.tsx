@@ -16,10 +16,13 @@ export default function LoginForm() {
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
 
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const phoneRegex = /^\+?[\d\s-]{7,20}$/; // Simple regex for phone numbers
+
     if (!formData.email) {
-      newErrors.email = 'Email is required';
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      newErrors.email = 'Please enter a valid email';
+      newErrors.email = 'Email or phone number is required';
+    } else if (!emailRegex.test(formData.email) && !phoneRegex.test(formData.email)) {
+      newErrors.email = 'Please enter a valid email or phone number';
     }
 
     if (!formData.password) {
@@ -66,15 +69,15 @@ export default function LoginForm() {
           <Mail className="absolute left-3 top-3.5 w-5 h-5 text-muted-foreground pointer-events-none" />
           <input
             id="email"
-            type="email"
+            type="text"
             name="email"
             value={formData.email}
             onChange={handleChange}
             placeholder="you@example.com"
-            className={`w-full pl-10 pr-4 py-3 border rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-primary ${
+            className={`w-full pl-10 pr-4 py-3 border rounded-lg transition-colors  ${
               errors.email
-                ? 'border-error focus:ring-error'
-                : 'border-border hover:border-primary/30 focus:ring-primary'
+                ? 'border-error focus:border-error focus:ring-destructive/20 '
+                : 'border-border hover:border-primary/30 focus:border-ring focus:ring-ring/50 '
             }`}
           />
         </div>
@@ -94,10 +97,10 @@ export default function LoginForm() {
             value={formData.password}
             onChange={handleChange}
             placeholder="••••••••"
-            className={`w-full pl-10 pr-12 py-3 border rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-primary ${
+            className={`w-full pl-10 pr-12 py-3 border rounded-lg transition-colors  ${
               errors.password
-                ? 'border-error focus:ring-error'
-                : 'border-border hover:border-primary/30 focus:ring-primary'
+                ? 'border-error focus:border-error focus:ring-destructive/20 '
+                : 'border-border hover:border-primary/30 focus:border-ring focus:ring-ring/50 '
             }`}
           />
           <button
@@ -124,7 +127,7 @@ export default function LoginForm() {
       <button
         type="submit"
         disabled={isLoading}
-        className="w-full bg-primary text-primary-foreground py-3 rounded-lg font-semibold hover:bg-primary/90 transition-colors disabled:opacity-70 flex items-center justify-center gap-2"
+        className="w-full bg-primary text-primary-foreground py-3 rounded-lg font-semibold hover:bg-primary/90 transition-colors disabled:opacity-70 flex items-center justify-center gap-2 cursor-pointer"
       >
         {isLoading && <Loader2 className="w-4 h-4 animate-spin" />}
         {isLoading ? 'Logging in...' : 'Log In'}
@@ -141,7 +144,7 @@ export default function LoginForm() {
 
       <button
         type="button"
-        className="w-full border border-border rounded-lg py-3 font-medium hover:bg-surface transition-colors flex items-center justify-center gap-2"
+        className="w-full border border-border rounded-lg py-3 font-medium hover:bg-surface transition-colors flex items-center justify-center gap-2 cursor-pointer"
       >
         <svg className="w-5 h-5" viewBox="0 0 24 24">
           <path
