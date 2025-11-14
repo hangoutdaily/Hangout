@@ -1,17 +1,20 @@
 'use client';
 
 import { usePathname } from 'next/navigation';
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useContext } from 'react';
 import Link from 'next/link';
 import { MapPin, Bell, Home, Users, MessageCircle, Heart, PlusSquare, Search } from 'lucide-react';
 import ThemeToggle from '@/components/ui/ThemeToggle';
 import { cn } from '@/lib/utils';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/shadcn/avatar';
+import { AuthContext } from '@/context/AuthContext';
+import SkeletonHeader from '../ui/HeaderSkeleton';
 
 export default function Header() {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const pathname = usePathname();
   const profileRef = useRef<HTMLDivElement | null>(null);
+  const { user, loading, logoutUser } = useContext(AuthContext);
 
   const isHome = pathname === '/';
 
@@ -21,9 +24,7 @@ export default function Header() {
         setIsProfileOpen(false);
       }
     };
-    if (isProfileOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-    }
+    if (isProfileOpen) document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [isProfileOpen]);
 
@@ -40,18 +41,20 @@ export default function Header() {
     { href: '/profile', label: 'Profile', icon: Users },
   ];
 
+  if (loading) {
+    return <SkeletonHeader />;
+  }
+
   return (
     <header className="sticky top-0 z-50 w-full bg-background">
       <div className="flex items-center justify-between h-14 px-4 md:hidden">
         <Link href="/" className="text-lg font-bold text-foreground">
           Hangout
         </Link>
-
         <div className="flex items-center text-sm font-medium text-foreground">
           <MapPin className="mr-1 h-4 w-4 text-accent" />
           Gandhinagar, India
         </div>
-
         <button
           aria-label="Notifications"
           className="p-2 rounded-md hover:bg-accent/10 transition"
@@ -60,7 +63,6 @@ export default function Header() {
           <Bell className="h-5 w-5 text-foreground" />
         </button>
       </div>
-
       <div className="hidden md:flex h-16 items-center justify-between max-w-7xl mx-auto px-6 relative">
         <div className="flex items-center gap-4">
           <Link href="/" className="text-2xl font-bold tracking-tight text-foreground">
@@ -71,7 +73,6 @@ export default function Header() {
             Gandhinagar, India
           </div>
         </div>
-
         <div className="flex-1 flex justify-center max-w-lg">
           <div className="relative w-full">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -82,45 +83,52 @@ export default function Header() {
             />
           </div>
         </div>
-
         <div className="flex items-center gap-6 relative" ref={profileRef}>
-          <nav className="flex gap-6 text-sm font-medium text-muted">
-            {desktopNav.map(({ href, label }) => (
-              <Link key={href} href={href} className="hover:text-foreground transition-colors">
-                {label}
+          {user && (
+            <nav className="flex gap-6 text-sm font-medium text-muted">
+              {desktopNav.map(({ href, label }) => (
+                <Link key={href} href={href} className="hover:text-foreground transition-colors">
+                  {label}
+                </Link>
+              ))}
+              <Link
+                href="/wishlist"
+                title="Wishlist"
+                className="hover:text-foreground transition-colors"
+              >
+                <Heart className="h-5 w-5" />
               </Link>
-            ))}
-            <Link
-              href="/wishlist"
-              title="Wishlist"
-              className="hover:text-foreground transition-colors"
+            </nav>
+          )}
+          {user ? (
+            <button
+              onClick={() => setIsProfileOpen(!isProfileOpen)}
+              aria-haspopup="menu"
+              aria-expanded={isProfileOpen}
+              className="relative flex items-center gap-2 p-1 rounded-lg hover:bg-accent/10 transition"
             >
-              <Heart className="h-5 w-5" />
+              <Avatar>
+                <AvatarImage src={user?.profilePhoto || 'https://i.pravatar.cc/40'} />
+                <AvatarFallback>{user?.email?.charAt(0) || 'U'}</AvatarFallback>
+              </Avatar>
+            </button>
+          ) : (
+            <Link href="/login" className="text-sm font-medium hover:underline">
+              Sign In
             </Link>
-          </nav>
-
-          <button
-            onClick={() => setIsProfileOpen(!isProfileOpen)}
-            aria-haspopup="menu"
-            aria-expanded={isProfileOpen}
-            className="relative flex items-center gap-2 p-1 rounded-lg hover:bg-accent/10 transition"
-          >
-            <Avatar>
-              <AvatarImage src="https://i.pravatar.cc/40" />
-              <AvatarFallback>User</AvatarFallback>
-            </Avatar>
-          </button>
-
-          {isProfileOpen && (
+          )}
+          {user && isProfileOpen && (
             <div className="absolute right-0 top-14 w-64 bg-popover border border-border rounded-lg shadow-md z-50 animate-in fade-in slide-in-from-top-2">
               <div className="p-4 border-b border-border flex items-center gap-3">
                 <Avatar>
-                  <AvatarImage src="https://i.pravatar.cc/40" />
-                  <AvatarFallback>User</AvatarFallback>
+                  <AvatarImage src={user?.profilePhoto || 'https://i.pravatar.cc/40'} />
+                  <AvatarFallback>{user?.email?.charAt(0) || 'U'}</AvatarFallback>
                 </Avatar>
                 <div>
-                  <p className="font-medium text-popover-foreground">User Name</p>
-                  <p className="text-sm text-muted-foreground">user@example.com</p>
+                  <p className="font-medium text-popover-foreground">
+                    {user?.email || user?.phone}
+                  </p>
+                  <p className="text-sm text-muted-foreground">{user?.email || user?.phone}</p>
                 </div>
               </div>
               <div className="p-4 space-y-3">
@@ -141,7 +149,14 @@ export default function Header() {
                   <button className="block w-full text-left px-3 py-2 text-sm text-popover-foreground hover:bg-accent/10 rounded-md transition">
                     Settings
                   </button>
-                  <button className="block w-full text-left px-3 py-2 text-sm text-destructive hover:bg-accent/10 rounded-md transition">
+                  <button
+                    onClick={() => {
+                      logoutUser();
+                      setIsProfileOpen(false);
+                      window.location.href = '/';
+                    }}
+                    className="block w-full text-left px-3 py-2 text-sm text-destructive hover:bg-accent/10 rounded-md transition"
+                  >
                     Sign Out
                   </button>
                 </div>

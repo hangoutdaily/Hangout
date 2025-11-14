@@ -2,6 +2,10 @@
 
 import { useState, type ChangeEvent, type FormEvent } from 'react';
 import { Mail, Lock, Eye, EyeOff, Loader2, Check, X } from 'lucide-react';
+import { signup } from '@/api/auth';
+import { useRouter } from 'next/navigation';
+import { useContext } from 'react';
+import { AuthContext } from '@/context/AuthContext';
 import Link from 'next/link';
 
 interface PasswordStrength {
@@ -91,6 +95,9 @@ export default function SignupForm() {
     }
   };
 
+  const router = useRouter();
+  const { setUser } = useContext(AuthContext);
+
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const newErrors = validateForm();
@@ -101,11 +108,30 @@ export default function SignupForm() {
     }
 
     setIsLoading(true);
-    // Simulate API call
-    setTimeout(() => {
+
+    try {
+      const payload: any = {
+        password: formData.password,
+      };
+
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      const phoneRegex = /^\+?[\d\s-]{7,20}$/;
+
+      if (emailRegex.test(formData.email)) payload.email = formData.email;
+      else if (phoneRegex.test(formData.email)) payload.phone = formData.email;
+
+      const res = await signup(payload);
+      console.log(res.data);
+
+      setUser(res.data.authUser);
+      router.push('/');
+    } catch (error: any) {
+      const msg = error.response?.data?.error || 'Signup failed';
+
+      setErrors({ email: msg });
+    } finally {
       setIsLoading(false);
-      alert('Signup successful!');
-    }, 1500);
+    }
   };
 
   return (
