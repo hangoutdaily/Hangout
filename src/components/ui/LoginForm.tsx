@@ -1,8 +1,11 @@
 'use client';
 
-import { useState, type ChangeEvent, type FormEvent } from 'react';
+import { useState, type ChangeEvent, type FormEvent, useContext } from 'react';
 import { Mail, Lock, Eye, EyeOff, Loader2 } from 'lucide-react';
 import Link from 'next/link';
+import { login } from '@/api/auth';
+import { AuthContext } from '@/context/AuthContext';
+import { useRouter } from 'next/navigation';
 
 export default function LoginForm() {
   const [formData, setFormData] = useState({
@@ -12,12 +15,14 @@ export default function LoginForm() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const router = useRouter();
+  const { setUser } = useContext(AuthContext);
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    const phoneRegex = /^\+?[\d\s-]{7,20}$/; // Simple regex for phone numbers
+    const phoneRegex = /^\+?[\d\s-]{7,20}$/;
 
     if (!formData.email) {
       newErrors.email = 'Email or phone number is required';
@@ -45,18 +50,40 @@ export default function LoginForm() {
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const newErrors = validateForm();
-
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
       return;
     }
 
     setIsLoading(true);
-    // Simulate API call
-    setTimeout(() => {
+
+    try {
+      const payload: any = {
+        password: formData.password,
+      };
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      const phoneRegex = /^\+?[\d\s-]{7,20}$/;
+      if (emailRegex.test(formData.email)) {
+        payload.email = formData.email;
+      } else if (phoneRegex.test(formData.email)) {
+        payload.phone = formData.email;
+      }
+      const res = await login(payload);
+      setUser(res.data.user);
+      router.replace('/');
+    } catch (err: any) {
+      const backendMsg = err.response?.data?.error || '';
+      let friendly = 'Login failed. Please try again.';
+      if (backendMsg.includes('Invalid')) {
+        friendly = 'Invalid email or password.';
+      }
+      if (backendMsg.includes('not found')) {
+        friendly = 'User not found.';
+      }
+      setErrors({ email: friendly });
+    } finally {
       setIsLoading(false);
-      alert('Login successful!');
-    }, 1500);
+    }
   };
 
   return (
@@ -74,10 +101,10 @@ export default function LoginForm() {
             value={formData.email}
             onChange={handleChange}
             placeholder="you@example.com"
-            className={`w-full pl-10 pr-4 py-3 border rounded-lg transition-colors  ${
+            className={`w-full pl-10 pr-4 py-3 border rounded-lg transition-colors ${
               errors.email
-                ? 'border-error focus:border-error focus:ring-destructive/20 '
-                : 'border-border hover:border-primary/30 focus:border-ring focus:ring-ring/50 '
+                ? 'border-error focus:border-error focus:ring-destructive/20'
+                : 'border-border hover:border-primary/30 focus:border-ring focus:ring-ring/50'
             }`}
           />
         </div>
@@ -97,10 +124,10 @@ export default function LoginForm() {
             value={formData.password}
             onChange={handleChange}
             placeholder="••••••••"
-            className={`w-full pl-10 pr-12 py-3 border rounded-lg transition-colors  ${
+            className={`w-full pl-10 pr-12 py-3 border rounded-lg transition-colors ${
               errors.password
-                ? 'border-error focus:border-error focus:ring-destructive/20 '
-                : 'border-border hover:border-primary/30 focus:border-ring focus:ring-ring/50 '
+                ? 'border-error focus:border-error focus:ring-destructive/20'
+                : 'border-border hover:border-primary/30 focus:border-ring focus:ring-ring/50'
             }`}
           />
           <button
@@ -166,9 +193,8 @@ export default function LoginForm() {
         </svg>
         Google
       </button>
-
       <p className="text-center text-sm text-muted-foreground mt-6">
-        Don't have an account?{' '}
+        Don&apos;t have an account?{' '}
         <Link
           href="/signup"
           className="font-semibold text-foreground hover:text-primary transition-colors"
