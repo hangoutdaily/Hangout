@@ -1,26 +1,16 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Calendar, MapPin, Tag, Wallet, CheckCircle2 } from 'lucide-react';
+import { Calendar, MapPin, Tag, Wallet, CheckCircle2, Loader2 } from 'lucide-react';
 import { Field, FieldInput, FieldTextarea, FieldSelect } from '@/components/ui/FormField';
 import { Button } from '@/components/ui/shadcn/button';
 import { cn } from '@/lib/utils';
+import { createEvent, getCategories } from '@/api/event';
 
-type Category =
-  | 'Technology'
-  | 'Food & Drink'
-  | 'Music'
-  | 'Sports'
-  | 'Education'
-  | 'Art & Culture'
-  | 'Health & Wellness'
-  | 'Business'
-  | 'Gaming'
-  | 'Other';
-
-type PriceType = 'free' | 'split_bill';
+type Category = string;
+type PriceType = 'FREE' | 'SPLIT_BILL';
 
 interface EventForm {
   title: string;
@@ -35,25 +25,18 @@ interface EventForm {
   priceType: PriceType | '';
 }
 
-const categories: Category[] = [
-  'Technology',
-  'Food & Drink',
-  'Music',
-  'Sports',
-  'Education',
-  'Art & Culture',
-  'Health & Wellness',
-  'Business',
-  'Gaming',
-  'Other',
-];
+function formatCategoryName(enumValue: string): string {
+  return enumValue
+    .replace(/_/g, ' ')
+    .replace(/\w\S*/g, (txt) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase());
+}
 
 export default function CreateEventForm() {
   const router = useRouter();
   const [form, setForm] = useState<EventForm>({
     title: '',
-    description: '',
     category: '',
+    description: '',
     city: '',
     state: '',
     addressLine: '',
@@ -63,8 +46,36 @@ export default function CreateEventForm() {
     priceType: '',
   });
 
+  const [categories, setCategories] = useState<string[]>([]);
+  const [categoryMap, setCategoryMap] = useState<Record<string, string>>({});
+
   const [errors, setErrors] = useState<Partial<Record<keyof EventForm, string>>>({});
   const [submitted, setSubmitted] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    async function fetchCategories() {
+      try {
+        const res = await getCategories();
+        console.log('res', res);
+        const enumValues = res.data.categories as string[];
+
+        const displayCategories = enumValues.map(formatCategoryName);
+        setCategories(displayCategories);
+        const newCategoryMap = displayCategories.reduce(
+          (acc, displayName, index) => {
+            acc[displayName] = enumValues[index];
+            return acc;
+          },
+          {} as Record<string, string>
+        );
+        setCategoryMap(newCategoryMap);
+      } catch (error) {
+        console.error('Failed to fetch categories', error);
+      }
+    }
+    fetchCategories();
+  }, []);
 
   const requiredFields: (keyof EventForm)[] = Object.keys(form) as (keyof EventForm)[];
   const progress = Math.round(
@@ -98,11 +109,33 @@ export default function CreateEventForm() {
     });
   }
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setSubmitted(true);
     if (!validate()) return;
-    router.push(`/events/${Date.now()}`);
+    setIsLoading(true);
+    try {
+      const payload = {
+        title: form.title,
+        description: form.description,
+        category: categoryMap[form.category],
+        city: form.city,
+        state: form.state,
+        addressLine: form.addressLine,
+        datetime: new Date(`${form.date}T${form.time}`),
+        maxAttendees: Number(form.maxAttendees),
+        priceType: form.priceType,
+      };
+      const res = await createEvent(payload);
+      // TODO - redirect to the new event's page
+      router.push('/');
+    } catch (err: any) {
+      console.error('Event creation failed:', err);
+      setErrors({
+        title: err.response?.data?.error || 'Failed to create event. Please try again.',
+      });
+      setIsLoading(false);
+    }
   }
 
   return (
@@ -122,7 +155,7 @@ export default function CreateEventForm() {
             value={form.category}
             onChange={(val) => update('category', val as Category)}
             options={categories}
-            placeholder="Select category"
+            placeholder={categories.length > 0 ? 'Select category' : 'Loading categories...'}
             error={!!errors.category}
           />
         </Field>
@@ -175,6 +208,7 @@ export default function CreateEventForm() {
               value={form.date}
               onChange={(e) => update('date', e.target.value)}
               error={!!errors.date}
+              min={new Date().toISOString().split('T')[0]}
             />
           </Field>
 
@@ -191,6 +225,7 @@ export default function CreateEventForm() {
         <Field label="Max Attendees" error={errors.maxAttendees}>
           <FieldInput
             type="number"
+            min="1"
             placeholder="e.g., 25"
             value={form.maxAttendees}
             onChange={(e) => update('maxAttendees', e.target.value)}
@@ -204,14 +239,14 @@ export default function CreateEventForm() {
           <PriceOption
             label="Free"
             description="Completely free for all attendees"
-            selected={form.priceType === 'free'}
-            onClick={() => update('priceType', 'free')}
+            selected={form.priceType === 'FREE'}
+            onClick={() => update('priceType', 'FREE')}
           />
           <PriceOption
             label="Split the Bill"
             description="Everyone contributes equally"
-            selected={form.priceType === 'split_bill'}
-            onClick={() => update('priceType', 'split_bill')}
+            selected={form.priceType === 'SPLIT_BILL'}
+            onClick={() => update('priceType', 'SPLIT_BILL')}
           />
         </div>
         {errors.priceType && <Error>{errors.priceType}</Error>}
@@ -233,8 +268,9 @@ export default function CreateEventForm() {
             </motion.p>
           )}
         </AnimatePresence>
-        <Button type="submit" className="font-semibold w-full sm:w-auto">
-          Create Event
+        <Button type="submit" className="font-semibold w-full sm:w-auto" disabled={isLoading}>
+          {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+          {isLoading ? 'Creating...' : 'Create Event'}
         </Button>
       </motion.div>
     </form>
