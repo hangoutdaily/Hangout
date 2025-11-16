@@ -15,7 +15,7 @@ type EventCardProps = {
   maxAttendees: number;
   category: string;
   price?: number;
-  priceType?: 'free' | 'split' | 'paid';
+  priceType?: 'free' | 'split_bill' | 'paid';
   creator: { name: string; avatar: string };
   isLiked?: boolean;
   onLike?: () => void;
@@ -41,7 +41,7 @@ export default function EventCard({
 }: EventCardProps) {
   const formatPrice = () => {
     if (priceType === 'free') return 'Free';
-    if (priceType === 'split') return 'Split';
+    if (priceType === 'split_bill') return 'Split';
     return `$${price}`;
   };
 
