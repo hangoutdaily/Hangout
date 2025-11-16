@@ -70,6 +70,7 @@ export default function LoginForm() {
       }
       const res = await login(payload);
       setUser(res.data.user);
+      localStorage.setItem('accessToken', res.data.accessToken);
       router.replace('/');
     } catch (err: any) {
       const backendMsg = err.response?.data?.error || '';

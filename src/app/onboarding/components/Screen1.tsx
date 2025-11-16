@@ -32,6 +32,13 @@ export function Screen1({ data, onChange, errors = {} }: Screen1Props) {
     'Japanese',
   ];
 
+  const genderOptions = [
+    { value: 'MALE', label: 'Male' },
+    { value: 'FEMALE', label: 'Female' },
+    { value: 'NON_BINARY', label: 'Non-Binary' },
+    { value: 'PREFER_NOT_TO_SAY', label: 'Prefer not to say' },
+  ];
+
   return (
     <div className="space-y-12">
       <div className="space-y-2">
@@ -44,12 +51,12 @@ export function Screen1({ data, onChange, errors = {} }: Screen1Props) {
       </div>
 
       <div className="space-y-8">
-        <Field label="Full Name" error={errors.fullName}>
+        <Field label="Full Name" error={errors.name}>
           <FieldInput
             placeholder="Your name"
-            value={data.fullName}
-            onChange={(e) => handleChange('fullName', e.target.value)}
-            error={!!errors.fullName}
+            value={data.name}
+            onChange={(e) => handleChange('name', e.target.value)}
+            error={!!errors.name}
           />
         </Field>
 
@@ -68,30 +75,9 @@ export function Screen1({ data, onChange, errors = {} }: Screen1Props) {
             <FieldSelect
               value={data.gender}
               onChange={(v) => handleChange('gender', v)}
-              options={['Male', 'Female', 'Non-binary', 'Prefer not to say']}
+              options={genderOptions}
               placeholder="Select gender"
               error={!!errors.gender}
-            />
-          </Field>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          <Field label="Email" error={errors.email}>
-            <FieldInput
-              type="email"
-              placeholder="your@email.com"
-              value={data.email}
-              onChange={(e) => handleChange('email', e.target.value)}
-              error={!!errors.email}
-            />
-          </Field>
-
-          <Field label="Phone Number" error={errors.phone}>
-            <FieldInput
-              placeholder="+1 (555) 000-0000"
-              value={data.phone}
-              onChange={(e) => handleChange('phone', e.target.value)}
-              error={!!errors.phone}
             />
           </Field>
         </div>
@@ -116,12 +102,12 @@ export function Screen1({ data, onChange, errors = {} }: Screen1Props) {
           />
         </Field>
 
-        <Field label="Where are you based?" error={errors.area}>
+        <Field label="Where are you based?" error={errors.city}>
           <FieldInput
             placeholder="City or region"
-            value={data.area}
-            onChange={(e) => handleChange('area', e.target.value)}
-            error={!!errors.area}
+            value={data.city}
+            onChange={(e) => handleChange('city', e.target.value)}
+            error={!!errors.city}
           />
         </Field>
 

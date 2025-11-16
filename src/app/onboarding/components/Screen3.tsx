@@ -20,8 +20,12 @@ export function Screen3({ data, onChange, errors = {} }: Screen3Props) {
     facebook: !!data.socialLinks?.facebook,
     linkedin: !!data.socialLinks?.linkedin,
   });
-
-  const lifestyleOptions = ['Yes', 'No', 'Occasionally', 'Prefer not to say'];
+  const lifestyleOptions = [
+    { value: 'YES', label: 'Yes' },
+    { value: 'NO', label: 'No' },
+    { value: 'OCCASIONALLY', label: 'Occasionally' },
+    { value: 'PREFER_NOT_TO_SAY', label: 'Prefer not to say' },
+  ];
   const socials = [
     { id: 'instagram', Icon: Instagram, placeholder: '@username' },
     { id: 'twitter', Icon: Twitter, placeholder: '@handle' },
