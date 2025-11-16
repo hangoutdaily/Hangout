@@ -54,11 +54,12 @@ export function FieldTextarea({ error, className, ...props }: FieldTextareaProps
     />
   );
 }
+type Option = string | { value: string; label: string };
 
 interface FieldSelectProps {
   value: string;
   placeholder?: string;
-  options: string[];
+  options: Option[];
   onChange: (value: string) => void;
   error?: boolean;
 }
@@ -69,11 +70,20 @@ export function FieldSelect({ value, onChange, options, placeholder, error }: Fi
         <SelectValue placeholder={placeholder} />
       </SelectTrigger>
       <SelectContent>
-        {options.map((opt) => (
-          <SelectItem key={opt} value={opt}>
-            {opt}
-          </SelectItem>
-        ))}
+        {options.map((opt) => {
+          if (typeof opt === 'string') {
+            return (
+              <SelectItem key={opt} value={opt}>
+                {opt}
+              </SelectItem>
+            );
+          }
+          return (
+            <SelectItem key={opt.value} value={opt.value}>
+              {opt.label}
+            </SelectItem>
+          );
+        })}
       </SelectContent>
     </Select>
   );

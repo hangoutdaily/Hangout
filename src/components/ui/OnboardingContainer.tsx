@@ -5,21 +5,20 @@ import { Screen1 } from '@/app/onboarding/components/Screen1';
 import { Screen2 } from '@/app/onboarding/components/Screen2';
 import { Screen3 } from '@/app/onboarding/components/Screen3';
 import { ProgressBar } from './ProgressBar';
+import { useRouter } from 'next/navigation';
 import { NavigationControls } from './NavigationControls';
 
 export function OnboardingContainer() {
   const [currentScreen, setCurrentScreen] = useState(0);
-  const [hasAttemptedSubmit, setHasAttemptedSubmit] = useState(false)
+  const [hasAttemptedSubmit, setHasAttemptedSubmit] = useState(false);
   const [formData, setFormData] = useState({
     // Screen 1
-    fullName: '',
+    name: '',
     age: '',
-    gender: '',
-    email: '',
-    phone: '',
+    gender: 'PREFER_NOT_TO_SAY',
     education: '',
     lifeEngagement: '',
-    area: '',
+    city: '',
     languages: [] as string[],
 
     // Screen 2
@@ -32,30 +31,27 @@ export function OnboardingContainer() {
     joyfulMoment: '',
 
     // Screen 3
-    drinks: '',
-    smoke: '',
-    weed: '',
+    drinks: 'PREFER_NOT_TO_SAY',
+    smoke: 'PREFER_NOT_TO_SAY',
+    weed: 'PREFER_NOT_TO_SAY',
     photos: [] as string[],
     selfie: '',
-    socialLinks: '',
+    socialLinks: {},
   });
 
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
+  const router = useRouter();
 
   const validateScreenRealtime = (screenIndex: number, data: any): Record<string, string> => {
     const errors: Record<string, string> = {};
 
     if (screenIndex === 0) {
-      if (!data.fullName.trim()) errors.fullName = 'Full name is required';
+      if (!data.name.trim()) errors.name = 'Full name is required';
       if (!data.age) errors.age = 'Age is required';
       if (!data.gender) errors.gender = 'Gender is required';
-      if (!data.email.trim()) errors.email = 'Email is required';
-      else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email))
-        errors.email = 'Valid email is required';
-      if (!data.phone.trim()) errors.phone = 'Phone number is required';
       if (!data.education) errors.education = 'Education is required';
       if (!data.lifeEngagement.trim()) errors.lifeEngagement = 'This field is required';
-      if (!data.area.trim()) errors.area = 'Location is required';
+      if (!data.city.trim()) errors.city = 'Location is required';
       if (data.languages.length === 0) errors.languages = 'Select at least one language';
     } else if (screenIndex === 1) {
       if (!data.bio.trim()) errors.bio = 'Bio is required';
@@ -80,15 +76,15 @@ export function OnboardingContainer() {
     setFormData(newData);
     // Re-validate on every change to clear errors if field becomes valid
     if (hasAttemptedSubmit) {
-      const errors = validateScreenRealtime(currentScreen, newData)
-      setValidationErrors(errors)
+      const errors = validateScreenRealtime(currentScreen, newData);
+      setValidationErrors(errors);
     }
   };
 
   const validateScreen = (screenIndex: number): boolean => {
     const errors = validateScreenRealtime(screenIndex, formData);
     setValidationErrors(errors);
-    setHasAttemptedSubmit(true)
+    setHasAttemptedSubmit(true);
     return Object.keys(errors).length === 0;
   };
 
@@ -96,7 +92,7 @@ export function OnboardingContainer() {
     if (validateScreen(currentScreen)) {
       if (currentScreen < screens.length - 1) {
         setCurrentScreen(currentScreen + 1);
-        setHasAttemptedSubmit(false)
+        setHasAttemptedSubmit(false);
         setValidationErrors({});
       }
     }
@@ -105,14 +101,50 @@ export function OnboardingContainer() {
   const handlePrev = () => {
     if (currentScreen > 0) {
       setCurrentScreen(currentScreen - 1);
-      setHasAttemptedSubmit(false)
-      setValidationErrors({})
+      setHasAttemptedSubmit(false);
+      setValidationErrors({});
     }
   };
 
-  const handleSubmit = () => {
-    console.log('Form submitted:', formData);
-    // Handle submission here
+  const handleSubmit = async () => {
+    try {
+      const accessToken = localStorage.getItem('accessToken');
+      console.log('accee token', accessToken);
+      if (!accessToken) {
+        console.error('No access token found');
+        return;
+      }
+
+      // For now ignoring photos upload
+      const payload = {
+        ...formData,
+        age: Number(formData.age),
+        traits: Array.from(formData.traits || []),
+        interests: Array.from(formData.interests || []),
+        languages: Array.from(formData.languages || []),
+      };
+
+      const res = await fetch('http://localhost:8080/profile', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!res.ok) {
+        const error = await res.json();
+        console.error('Profile creation failed:', error);
+        return;
+      }
+
+      const data = await res.json();
+      console.log('Profile created:', data);
+      router.push('/');
+    } catch (err) {
+      console.error('Error submitting form:', err);
+    }
   };
 
   const screens = [
