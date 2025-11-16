@@ -124,7 +124,8 @@ export default function SignupForm() {
       console.log(res.data);
 
       setUser(res.data.authUser);
-      router.push('/');
+      localStorage.setItem('accessToken', res.data.accessToken);
+      router.push('/onboarding');
     } catch (error: any) {
       const msg = error.response?.data?.error || 'Signup failed';
 
