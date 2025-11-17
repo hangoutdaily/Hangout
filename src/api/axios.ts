@@ -5,38 +5,44 @@ const api = axios.create({
   withCredentials: true,
 });
 
-let refreshing = false;
-let queue: any[] = [];
+let refreshPromise: Promise<void> | null = null;
 
 api.interceptors.response.use(
   (res) => res,
   async (error) => {
     const original = error.config;
 
-    if (error.response?.status === 401 && !original._retry) {
-      original._retry = true;
-
-      if (!refreshing) {
-        refreshing = true;
-        try {
-          await api.post('/auth/refresh');
-          refreshing = false;
-
-          queue.forEach((cb) => cb());
-          queue = [];
-
-          return api(original);
-        } catch (err) {
-          refreshing = false;
-          queue = [];
-          return Promise.reject(err);
-        }
-      }
-
-      return new Promise((resolve) => queue.push(() => resolve(api(original))));
+    if (!error.response || error.response.status !== 401) {
+      return Promise.reject(error);
     }
 
-    return Promise.reject(error);
+    if (original?.url?.endsWith('/auth/refresh')) {
+      return Promise.reject(error);
+    }
+
+    if (refreshPromise) {
+      try {
+        await refreshPromise;
+        return api(original);
+      } catch (err) {
+        return Promise.reject(err);
+      }
+    }
+
+    refreshPromise = (async () => {
+      try {
+        await api.post('/auth/refresh');
+      } finally {
+        refreshPromise = null;
+      }
+    })();
+
+    try {
+      await refreshPromise;
+      return api(original);
+    } catch (err) {
+      return Promise.reject(err);
+    }
   }
 );
 

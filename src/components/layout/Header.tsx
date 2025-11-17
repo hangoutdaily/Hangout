@@ -8,13 +8,12 @@ import ThemeToggle from '@/components/ui/ThemeToggle';
 import { cn } from '@/lib/utils';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/shadcn/avatar';
 import { AuthContext } from '@/context/AuthContext';
-import SkeletonHeader from '../ui/HeaderSkeleton';
 
 export default function Header() {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const pathname = usePathname();
   const profileRef = useRef<HTMLDivElement | null>(null);
-  const { user, loading, logoutUser } = useContext(AuthContext);
+  const { user, logoutUser } = useContext(AuthContext);
 
   const isHome = pathname === '/';
 
@@ -40,10 +39,6 @@ export default function Header() {
     { href: '/chats', label: 'Chats', icon: MessageCircle },
     { href: '/profile', label: 'Profile', icon: Users },
   ];
-
-  if (loading) {
-    return <SkeletonHeader />;
-  }
 
   return (
     <header className="sticky top-0 z-50 w-full bg-background">
@@ -73,16 +68,18 @@ export default function Header() {
             Gandhinagar, India
           </div>
         </div>
-        <div className="flex-1 flex justify-center max-w-lg">
-          <div className="relative w-full">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <input
-              type="text"
-              placeholder="Search Hangouts..."
-              className="w-full rounded-lg border border-border bg-surface pl-10 pr-4 py-1.5 text-foreground placeholder:text-muted-foreground transition-all"
-            />
+        {isHome && (
+          <div className="flex-1 flex justify-center max-w-lg">
+            <div className="relative w-full">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <input
+                type="text"
+                placeholder="Search Hangouts..."
+                className="w-full rounded-lg border border-border bg-surface pl-10 pr-4 py-1.5 text-foreground placeholder:text-muted-foreground transition-all"
+              />
+            </div>
           </div>
-        </div>
+        )}
         <div className="flex items-center gap-6 relative" ref={profileRef}>
           {user && (
             <nav className="flex gap-6 text-sm font-medium text-muted">
