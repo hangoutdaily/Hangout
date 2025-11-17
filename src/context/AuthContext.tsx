@@ -36,6 +36,10 @@ export default function AuthProvider({ children }: any) {
     init();
   }, []);
 
+  if (loading) {
+    return null;
+  }
+
   const logoutUser = async () => {
     await logout();
     setUser(null);
