@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Calendar, MapPin, Tag, Wallet, CheckCircle2, Loader2 } from 'lucide-react';
@@ -48,10 +48,11 @@ export default function CreateEventForm() {
 
   const [categories, setCategories] = useState<string[]>([]);
   const [categoryMap, setCategoryMap] = useState<Record<string, string>>({});
-
   const [errors, setErrors] = useState<Partial<Record<keyof EventForm, string>>>({});
   const [submitted, setSubmitted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const dateRef = useRef<HTMLInputElement>(null);
+  const timeRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     async function fetchCategories() {
@@ -203,22 +204,28 @@ export default function CreateEventForm() {
       <Section icon={Calendar} title="When & Capacity" subtitle="Choose schedule & attendees">
         <div className="grid sm:grid-cols-2 gap-4">
           <Field label="Date" error={errors.date}>
-            <FieldInput
-              type="date"
-              value={form.date}
-              onChange={(e) => update('date', e.target.value)}
-              error={!!errors.date}
-              min={new Date().toISOString().split('T')[0]}
-            />
+            <div onClick={() => dateRef.current?.showPicker()}>
+              <FieldInput
+                ref={dateRef}
+                type="date"
+                value={form.date}
+                onChange={(e) => update('date', e.target.value)}
+                error={!!errors.date}
+                min={new Date().toISOString().split('T')[0]}
+              />
+            </div>
           </Field>
 
           <Field label="Time" error={errors.time}>
-            <FieldInput
-              type="time"
-              value={form.time}
-              onChange={(e) => update('time', e.target.value)}
-              error={!!errors.time}
-            />
+            <div onClick={() => timeRef.current?.showPicker()}>
+              <FieldInput
+                ref={timeRef}
+                type="time"
+                value={form.time}
+                onChange={(e) => update('time', e.target.value)}
+                error={!!errors.time}
+              />
+            </div>
           </Field>
         </div>
 
