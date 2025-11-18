@@ -39,9 +39,12 @@ const baseInputClass = (error?: boolean) =>
 interface FieldInputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   error?: boolean;
 }
-export function FieldInput({ error, className, ...props }: FieldInputProps) {
-  return <Input className={cn(baseInputClass(error), className)} {...props} />;
-}
+export const FieldInput = React.forwardRef<HTMLInputElement, FieldInputProps>(
+  ({ error, className, ...props }, ref) => {
+    return <Input ref={ref} className={cn(baseInputClass(error), className)} {...props} />;
+  }
+);
+FieldInput.displayName = 'FieldInput';
 
 interface FieldTextareaProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {
   error?: boolean;
