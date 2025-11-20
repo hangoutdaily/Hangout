@@ -16,33 +16,23 @@ api.interceptors.response.use(
       return Promise.reject(error);
     }
 
+    const hasRefresh = document.cookie.includes('hangout_rt=');
+    if (!hasRefresh) {
+      return Promise.reject(error);
+    }
+
     if (original?.url?.endsWith('/auth/refresh')) {
       return Promise.reject(error);
     }
 
     if (refreshPromise) {
-      try {
-        await refreshPromise;
-        return api(original);
-      } catch (err) {
-        return Promise.reject(err);
-      }
-    }
-
-    refreshPromise = (async () => {
-      try {
-        await api.post('/auth/refresh');
-      } finally {
-        refreshPromise = null;
-      }
-    })();
-
-    try {
       await refreshPromise;
       return api(original);
-    } catch (err) {
-      return Promise.reject(err);
     }
+    refreshPromise = api.post('/auth/refresh');
+    await refreshPromise;
+    refreshPromise = null;
+    return api(original);
   }
 );
 
