@@ -54,7 +54,7 @@ export default function EventGrid() {
       }
     }
     fetchData();
-  }, []);
+  }, [user]);
 
   const handleLike = async (eventId: string) => {
     const isCurrentlyLiked = likedEvents.has(eventId);
