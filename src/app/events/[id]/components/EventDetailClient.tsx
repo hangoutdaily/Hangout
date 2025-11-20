@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useContext } from 'react';
 import {
   MapPin,
   Calendar,
@@ -14,45 +14,42 @@ import {
 } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { getEvent, getMyLikes, likeEvent, unlikeEvent } from '@/api/event';
+import { AuthContext } from '@/context/AuthContext';
 
 interface EventDetailClientProps {
   id: string;
 }
 
+type EventHost = {
+  name: string | null;
+  selfie: string | null;
+};
+
+type EventDetail = {
+  id: number;
+  title: string;
+  description: string;
+  city: string;
+  addressLine: string;
+  datetime: string;
+  maxAttendees: number;
+  category: string;
+  priceType: 'FREE' | 'SPLIT_BILL';
+  host: EventHost;
+  attendees: { id: number }[];
+};
+
 export default function EventDetailClient({ id }: EventDetailClientProps) {
+  const { user } = useContext(AuthContext);
+  const [event, setEvent] = useState<EventDetail | null>(null);
+  const [loading, setLoading] = useState(true);
   const [isLiked, setIsLiked] = useState(false);
   const [hasJoined, setHasJoined] = useState(false);
-  const mockEvent = {
-    id,
-    title: 'Blackpink Concert',
-    description:
-      "Experience the electrifying performance of the world's biggest K-pop girl group. Get ready for an unforgettable night of music, dance, and pure energy. This concert will feature all your favorite songs, special performances, and unforgettable moments you'll cherish forever.",
-    category: 'Music',
-    city: 'New York',
-    state: 'NY',
-    addressLine: '123 Main Street, Madison Square Garden',
-    date: 'May 20, 2024',
-    time: '8:00 PM',
-    attendees: 1200,
-    maxAttendees: 2000,
-    priceType: 'split_bill',
-    image: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=1200&h=600&fit=crop',
-    creator: {
-      id: '1',
-      name: 'Sarah Johnson',
-      avatar: 'https://i.pravatar.cc/150?img=1',
-      rating: 4.9,
-      reviews: 42,
-      bio: 'Music enthusiast & event organizer',
-      fullBio:
-        "I'm a two-time Emmy Award-winning filmmaker and published author of a graphic novel on Canadian history. I've lived in Kensington Market for over three decades, running a media company so I know the local characters, cultural history, and many merchants and artisans and residents too. My house from where we start out was even formerly a bagel factory!",
-    },
-  };
 
   const attendeeMetadata = {
     genderRatio: { male: 45, female: 55 },
     ageRange: { min: 18, max: 45, avg: 28 },
-    topInterests: ['Music', 'Concerts', 'Nightlife', 'Socializing'],
   };
 
   const mockReviews = [
@@ -62,20 +59,6 @@ export default function EventDetailClient({ id }: EventDetailClientProps) {
       rating: 5,
       text: 'Amazing event! Sarah did an incredible job organizing everything. Highly recommend!',
       date: '2 weeks ago',
-    },
-    {
-      id: '2',
-      user: 'Priya Singh',
-      rating: 5,
-      text: 'Best concert experience ever. Perfect organization and great crowd.',
-      date: '1 month ago',
-    },
-    {
-      id: '3',
-      user: 'Arjun Desai',
-      rating: 4,
-      text: 'Great vibes and amazing people. Would definitely attend again.',
-      date: '2 months ago',
     },
   ];
 
@@ -87,18 +70,73 @@ export default function EventDetailClient({ id }: EventDetailClientProps) {
       message: "Can't wait for this concert! Is anyone meeting before?",
       time: '2 hours ago',
     },
-    {
-      id: '2',
-      user: 'Rushil Patel',
-      avatar: 'https://i.pravatar.cc/40?img=3',
-      message: "Yes! Let's meet at 7 PM near the entrance",
-      time: '1 hour ago',
-    },
   ];
+
+  useEffect(() => {
+    async function load() {
+      try {
+        const res = await getEvent(id);
+        const ev: EventDetail = res.data.event;
+        setEvent(ev);
+        if (user) {
+          try {
+            const likesRes = await getMyLikes();
+            const likedEventIds: number[] = likesRes.data.likedEventIds ?? [];
+            setIsLiked(likedEventIds.includes(ev.id));
+          } catch {
+            setIsLiked(false);
+          }
+        } else {
+          setIsLiked(false);
+        }
+      } catch (err) {
+        console.error('Failed to load event', err);
+        setEvent(null);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    load();
+  }, [id, user]);
+
+  const handleToggleLike = async () => {
+    if (!user) {
+      alert('Login required to like events');
+      return;
+    }
+    const next = !isLiked;
+    setIsLiked(next);
+    try {
+      if (next) {
+        await likeEvent(id);
+      } else {
+        await unlikeEvent(id);
+      }
+    } catch (err) {
+      console.error('Failed to toggle like', err);
+      setIsLiked(!next);
+    }
+  };
+
+  if (loading) return <div className="p-6">Loading...</div>;
+  if (!event) return <div className="p-6 text-red-500">Event not found.</div>;
+
+  const eventDate = new Date(event.datetime);
+  const formattedDate = eventDate.toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  });
+  const formattedTime = eventDate.toLocaleTimeString('en-US', {
+    hour: 'numeric',
+    minute: '2-digit',
+  });
+
+  const attendeesCount = event.attendees?.length ?? 0;
 
   return (
     <div className="min-h-screen bg-background">
-      {/* HEADER */}
       <div className="sticky top-0 z-50 bg-background/95 backdrop-blur border-b border-border">
         <div className="mx-auto max-w-7xl px-4 py-3 flex justify-between items-center">
           <Link
@@ -114,11 +152,13 @@ export default function EventDetailClient({ id }: EventDetailClientProps) {
               <Share2 className="h-5 w-5 text-foreground" />
             </button>
             <button
-              onClick={() => setIsLiked(!isLiked)}
+              onClick={handleToggleLike}
               className="p-2.5 rounded-full hover:bg-secondary transition-colors"
             >
               <Heart
-                className={`h-5 w-5 ${isLiked ? 'fill-destructive text-destructive' : 'text-foreground'}`}
+                className={`h-5 w-5 ${
+                  isLiked ? 'fill-destructive text-destructive' : 'text-foreground'
+                }`}
               />
             </button>
           </div>
@@ -129,8 +169,8 @@ export default function EventDetailClient({ id }: EventDetailClientProps) {
         <div className="mb-8">
           <div className="flex items-start justify-between gap-4 mb-4">
             <div>
-              <h1 className="text-4xl font-bold text-foreground mb-2">{mockEvent.title}</h1>
-              <p className="text-muted">{mockEvent.category}</p>
+              <h1 className="text-4xl font-bold text-foreground mb-2">{event.title}</h1>
+              <p className="text-muted">{event.category}</p>
             </div>
           </div>
 
@@ -139,7 +179,7 @@ export default function EventDetailClient({ id }: EventDetailClientProps) {
               <Calendar className="h-5 w-5 text-muted flex-shrink-0 mt-0.5" />
               <div>
                 <p className="text-xs uppercase tracking-wide text-muted font-medium">Date</p>
-                <p className="text-foreground">{mockEvent.date}</p>
+                <p className="text-foreground">{formattedDate}</p>
               </div>
             </div>
 
@@ -147,7 +187,7 @@ export default function EventDetailClient({ id }: EventDetailClientProps) {
               <Clock className="h-5 w-5 text-muted flex-shrink-0 mt-0.5" />
               <div>
                 <p className="text-xs uppercase tracking-wide text-muted font-medium">Time</p>
-                <p className="text-foreground">{mockEvent.time}</p>
+                <p className="text-foreground">{formattedTime}</p>
               </div>
             </div>
 
@@ -155,7 +195,7 @@ export default function EventDetailClient({ id }: EventDetailClientProps) {
               <MapPin className="h-5 w-5 text-muted flex-shrink-0 mt-0.5" />
               <div>
                 <p className="text-xs uppercase tracking-wide text-muted font-medium">Location</p>
-                <p className="text-foreground text-sm">{mockEvent.addressLine}</p>
+                <p className="text-foreground text-sm">{event.addressLine}</p>
               </div>
             </div>
           </div>
@@ -163,7 +203,7 @@ export default function EventDetailClient({ id }: EventDetailClientProps) {
           <div className="flex items-center gap-2 pb-8 border-b border-border">
             <div className="px-3 py-1 bg-secondary rounded-full">
               <p className="text-sm font-medium text-foreground">
-                {mockEvent.priceType === 'split_bill' ? 'Split the Bill' : 'Free'}
+                {event.priceType === 'SPLIT_BILL' ? 'Split the Bill' : 'Free'}
               </p>
             </div>
           </div>
@@ -171,7 +211,7 @@ export default function EventDetailClient({ id }: EventDetailClientProps) {
 
         <div className="mb-6 pb-8 border-b border-border">
           <h3 className="text-lg font-semibold text-foreground mb-4">Things to know</h3>
-          <p className="text-foreground leading-relaxed mb-8">{mockEvent.description}</p>
+          <p className="text-foreground leading-relaxed mb-8">{event.description}</p>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="bg-secondary rounded-2xl p-6 flex flex-col">
@@ -180,17 +220,22 @@ export default function EventDetailClient({ id }: EventDetailClientProps) {
               </p>
               <div className="space-y-3">
                 <div className="flex items-baseline gap-2">
-                  <span className="text-4xl font-bold text-foreground">{mockEvent.attendees}</span>
-                  <span className="text-lg text-muted">/ {mockEvent.maxAttendees}</span>
+                  <span className="text-4xl font-bold text-foreground">{attendeesCount}</span>
+                  <span className="text-lg text-muted">/ {event.maxAttendees}</span>
                 </div>
                 <div className="w-full bg-border rounded-full h-1.5">
                   <div
                     className="bg-foreground h-1.5 rounded-full"
-                    style={{ width: `${(mockEvent.attendees / mockEvent.maxAttendees) * 100}%` }}
+                    style={{
+                      width: `${Math.min(
+                        100,
+                        (attendeesCount / (event.maxAttendees || 1)) * 100
+                      )}%`,
+                    }}
                   />
                 </div>
                 <p className="text-xs text-muted">
-                  {Math.round((mockEvent.attendees / mockEvent.maxAttendees) * 100)}% capacity
+                  {Math.round((attendeesCount / (event.maxAttendees || 1)) * 100)}% capacity
                 </p>
               </div>
             </div>
@@ -256,25 +301,30 @@ export default function EventDetailClient({ id }: EventDetailClientProps) {
           <h3 className="text-lg font-semibold text-foreground mb-6">Meet the host</h3>
           <div className="bg-secondary rounded-2xl p-8 flex flex-col items-center text-center">
             <Image
-              src={mockEvent.creator.avatar || '/placeholder.svg'}
-              alt={mockEvent.creator.name}
+              src={event.host.selfie || '/placeholder.svg'}
+              alt={event.host.name || 'Host'}
               width={100}
               height={100}
               className="rounded-full mb-4 object-cover"
             />
-            <h4 className="text-2xl font-bold text-foreground mb-1">{mockEvent.creator.name}</h4>
-            <p className="text-sm text-muted font-medium mb-4">{mockEvent.creator.bio}</p>
+            <h4 className="text-2xl font-bold text-foreground mb-1">
+              {event.host.name || 'Hangout Host'}
+            </h4>
+            <p className="text-sm text-muted font-medium mb-4">
+              Friendly local host who loves meeting new people and organizing great experiences.
+            </p>
 
             <div className="flex items-center gap-4 mb-6 text-sm">
               <div className="flex items-center gap-1">
                 <Star className="h-4 w-4 fill-foreground text-foreground" />
-                <span className="font-semibold text-foreground">{mockEvent.creator.rating}</span>
-                <span className="text-muted">({mockEvent.creator.reviews} reviews)</span>
+                <span className="font-semibold text-foreground">4.9</span>
+                <span className="text-muted">(42 reviews)</span>
               </div>
             </div>
 
             <p className="text-foreground leading-relaxed mb-6 max-w-xl text-sm">
-              {mockEvent.creator.fullBio}
+              I love hosting experiences that bring people together. Expect a chill vibe, good
+              conversations, and a safe, welcoming space for everyone.
             </p>
 
             <button className="px-6 py-2.5 border border-border rounded-lg hover:bg-background transition-colors text-sm font-medium text-foreground">
