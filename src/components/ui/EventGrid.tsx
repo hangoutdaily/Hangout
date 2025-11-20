@@ -1,9 +1,10 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useContext } from 'react';
 import EventCard from './EventCard';
-import { getAllEvents } from '@/api/event';
+import { getAllEvents, getMyLikes, likeEvent, unlikeEvent } from '@/api/event';
 import { Skeleton } from './shadcn/skeleton';
+import { AuthContext } from '@/context/AuthContext';
 
 export function formatCategory(cat: string) {
   return cat
@@ -35,32 +36,50 @@ export default function EventGrid() {
   const [events, setEvents] = useState<FetchedEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [likedEvents, setLikedEvents] = useState<Set<string>>(new Set());
+  const { user } = useContext(AuthContext);
 
   useEffect(() => {
-    async function fetchEvents() {
+    async function fetchData() {
       try {
-        const res = await getAllEvents();
-        console.log(res);
-        setEvents(res.data.events);
-      } catch (err) {
-        console.error('Failed to fetch events', err);
+        const eventsRes = await getAllEvents();
+        setEvents(eventsRes.data.events);
+        if (user) {
+          const likesRes = await getMyLikes();
+          setLikedEvents(new Set(likesRes.data.likedEventIds.map(String)));
+        } else {
+          setLikedEvents(new Set());
+        }
       } finally {
         setLoading(false);
       }
     }
-    fetchEvents();
+    fetchData();
   }, []);
 
-  const handleLike = (eventId: string) => {
+  const handleLike = async (eventId: string) => {
+    const isCurrentlyLiked = likedEvents.has(eventId);
+
     setLikedEvents((prev) => {
-      const newSet = new Set(prev);
-      if (newSet.has(eventId)) {
-        newSet.delete(eventId);
-      } else {
-        newSet.add(eventId);
-      }
-      return newSet;
+      const updated = new Set(prev);
+      if (isCurrentlyLiked) updated.delete(eventId);
+      else updated.add(eventId);
+      return updated;
     });
+
+    try {
+      if (isCurrentlyLiked) {
+        await unlikeEvent(eventId);
+      } else {
+        await likeEvent(eventId);
+      }
+    } catch (error) {
+      setLikedEvents((prev) => {
+        const updated = new Set(prev);
+        if (isCurrentlyLiked) updated.add(eventId);
+        else updated.delete(eventId);
+        return updated;
+      });
+    }
   };
 
   const handleJoin = (eventId: string) => {

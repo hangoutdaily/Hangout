@@ -3,6 +3,7 @@
 import { MapPin, Calendar, Clock, Users, Heart, Zap } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { motion } from 'framer-motion';
 
 type EventCardProps = {
   id: string;
@@ -65,11 +66,19 @@ export default function EventCard({
         <button
           onClick={(e) => {
             e.preventDefault();
+            e.stopPropagation();
             onLike?.();
           }}
           className="p-1.5 rounded-lg hover:bg-accent/10 transition-colors"
         >
-          <Heart className={`h-5 w-5 ${isLiked ? 'text-red-500 fill-red-500' : 'text-muted'}`} />
+          <motion.div
+            key={isLiked ? 'liked' : 'unliked'}
+            initial={{ scale: 0.8, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ type: 'spring', stiffness: 300, damping: 12 }}
+          >
+            <Heart className={`h-5 w-5 ${isLiked ? 'text-red-500 fill-red-500' : 'text-muted'}`} />
+          </motion.div>
         </button>
       </div>
 
