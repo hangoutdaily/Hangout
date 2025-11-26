@@ -19,6 +19,7 @@ type EventCardProps = {
   priceType?: 'free' | 'split_bill' | 'paid';
   creator: { name: string; avatar: string };
   isLiked?: boolean;
+  isJoined?: boolean;
   onLike?: () => void;
   onJoin?: () => void;
 };
@@ -37,6 +38,7 @@ export default function EventCard({
   priceType = 'free',
   creator,
   isLiked = false,
+  isJoined,
   onLike,
   onJoin,
 }: EventCardProps) {
@@ -125,11 +127,17 @@ export default function EventCard({
         <button
           onClick={(e) => {
             e.preventDefault();
+            e.stopPropagation();
             onJoin?.();
           }}
-          className="bg-accent text-accent-foreground px-4 py-1.5 rounded-lg font-semibold text-sm hover:opacity-90 transition-colors whitespace-nowrap"
+          className={`px-4 py-1.5 rounded-lg font-semibold text-sm cursor-pointer transition-all whitespace-nowrap
+            ${
+              isJoined
+                ? 'bg-green-100 text-green-700 hover:bg-green-200'
+                : 'bg-accent text-accent-foreground hover:opacity-90'
+            }`}
         >
-          Request to Join
+          {isJoined ? 'Joined' : 'Request to Join'}
         </button>
       </div>
 
