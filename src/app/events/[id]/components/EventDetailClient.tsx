@@ -14,8 +14,19 @@ import {
 } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { getEvent, getMyLikes, likeEvent, unlikeEvent } from '@/api/event';
+import {
+  cancelJoinEvent,
+  getEvent,
+  getMyJoinedEvents,
+  getMyLikes,
+  joinEvent,
+  likeEvent,
+  unlikeEvent,
+} from '@/api/event';
 import { AuthContext } from '@/context/AuthContext';
+import JoinEventDialog from '@/components/layout/JoinEventDialog';
+import { launchConfetti } from '@/lib/cofetti';
+import ConfirmUnjoinDialog from '@/components/layout/ConfirmUnJoinDialog';
 
 interface EventDetailClientProps {
   id: string;
@@ -46,6 +57,8 @@ export default function EventDetailClient({ id }: EventDetailClientProps) {
   const [loading, setLoading] = useState(true);
   const [isLiked, setIsLiked] = useState(false);
   const [hasJoined, setHasJoined] = useState(false);
+  const [showJoinDialog, setShowJoinDialog] = useState(false);
+  const [showUnjoinDialog, setShowUnjoinDialog] = useState(false);
 
   const attendeeMetadata = {
     genderRatio: { male: 45, female: 55 },
@@ -79,13 +92,10 @@ export default function EventDetailClient({ id }: EventDetailClientProps) {
         const ev: EventDetail = res.data.event;
         setEvent(ev);
         if (user) {
-          try {
-            const likesRes = await getMyLikes();
-            const likedEventIds: number[] = likesRes.data.likedEventIds ?? [];
-            setIsLiked(likedEventIds.includes(ev.id));
-          } catch {
-            setIsLiked(false);
-          }
+          const likesRes = await getMyLikes();
+          setIsLiked(likesRes.data.likedEventIds?.includes(ev.id));
+          const joinedRes = await getMyJoinedEvents();
+          setHasJoined(joinedRes.data.joinedEventIds?.includes(ev.id));
         } else {
           setIsLiked(false);
         }
@@ -407,17 +417,40 @@ export default function EventDetailClient({ id }: EventDetailClientProps) {
         <div className="flex gap-3 pt-8 border-t border-border">
           {!hasJoined ? (
             <button
-              onClick={() => setHasJoined(true)}
-              className="flex-1 px-6 py-3 bg-accent text-accent-foreground rounded-lg hover:opacity-90 transition-opacity font-semibold"
+              onClick={() => setShowJoinDialog(true)}
+              className="flex-1 px-6 py-3 bg-accent text-accent-foreground rounded-lg hover:opacity-90 font-semibold"
             >
               Request to Join
             </button>
           ) : (
-            <button className="flex-1 px-6 py-3 bg-secondary text-foreground rounded-lg hover:bg-secondary/80 transition-colors font-semibold">
+            <button
+              onClick={() => setShowUnjoinDialog(true)}
+              className="flex-1 px-6 py-3 bg-secondary text-foreground rounded-lg hover:bg-secondary/80 font-semibold"
+            >
               Cancel Request
             </button>
           )}
         </div>
+        <JoinEventDialog
+          open={showJoinDialog}
+          onClose={() => setShowJoinDialog(false)}
+          onSubmit={async (message) => {
+            await joinEvent(id, message);
+            setHasJoined(true);
+            setShowJoinDialog(false);
+            launchConfetti();
+          }}
+        />
+
+        <ConfirmUnjoinDialog
+          open={showUnjoinDialog}
+          onClose={() => setShowUnjoinDialog(false)}
+          onConfirm={async () => {
+            await cancelJoinEvent(id);
+            setHasJoined(false);
+            setShowUnjoinDialog(false);
+          }}
+        />
       </div>
     </div>
   );

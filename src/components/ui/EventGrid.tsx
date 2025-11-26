@@ -2,9 +2,20 @@
 
 import { useState, useEffect, useContext } from 'react';
 import EventCard from './EventCard';
-import { getAllEvents, getMyLikes, likeEvent, unlikeEvent } from '@/api/event';
+import {
+  getAllEvents,
+  getMyLikes,
+  getMyJoinedEvents,
+  joinEvent,
+  likeEvent,
+  unlikeEvent,
+  cancelJoinEvent,
+} from '@/api/event';
 import { Skeleton } from './shadcn/skeleton';
 import { AuthContext } from '@/context/AuthContext';
+import JoinEventDialog from '../layout/JoinEventDialog';
+import ConfirmUnjoinDialog from '../layout/ConfirmUnJoinDialog';
+import { launchConfetti } from '@/lib/cofetti';
 
 export function formatCategory(cat: string) {
   return cat
@@ -36,6 +47,10 @@ export default function EventGrid() {
   const [events, setEvents] = useState<FetchedEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [likedEvents, setLikedEvents] = useState<Set<string>>(new Set());
+  const [joinedEvents, setJoinedEvents] = useState<Set<string>>(new Set());
+  const [joinDialogFor, setJoinDialogFor] = useState<number | null>(null);
+  const [unjoinDialogFor, setUnjoinDialogFor] = useState<number | null>(null);
+
   const { user } = useContext(AuthContext);
 
   useEffect(() => {
@@ -46,8 +61,11 @@ export default function EventGrid() {
         if (user) {
           const likesRes = await getMyLikes();
           setLikedEvents(new Set(likesRes.data.likedEventIds.map(String)));
+          const joinedRes = await getMyJoinedEvents();
+          setJoinedEvents(new Set(joinedRes.data.joinedEventIds.map(String)));
         } else {
           setLikedEvents(new Set());
+          setJoinedEvents(new Set());
         }
       } finally {
         setLoading(false);
@@ -82,10 +100,6 @@ export default function EventGrid() {
     }
   };
 
-  const handleJoin = (eventId: string) => {
-    console.log(`Joining event ${eventId}`);
-  };
-
   if (loading) {
     return (
       <div className="mx-auto max-w-7xl px-4">
@@ -108,38 +122,64 @@ export default function EventGrid() {
 
   return (
     <div className="mx-auto max-w-7xl px-4">
+      <JoinEventDialog
+        open={joinDialogFor !== null}
+        onClose={() => setJoinDialogFor(null)}
+        onSubmit={async (message) => {
+          const id = joinDialogFor!;
+          await joinEvent(id, message);
+          setJoinedEvents((prev) => new Set(prev).add(String(id)));
+          setJoinDialogFor(null);
+          launchConfetti();
+        }}
+      />
+
+      <ConfirmUnjoinDialog
+        open={unjoinDialogFor !== null}
+        onClose={() => setUnjoinDialogFor(null)}
+        onConfirm={async () => {
+          const id = unjoinDialogFor!;
+          await cancelJoinEvent(id);
+          setJoinedEvents((prev) => {
+            const s = new Set(prev);
+            s.delete(String(id));
+            return s;
+          });
+          setUnjoinDialogFor(null);
+        }}
+      />
+
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {events.map((event) => {
-          const eventProps = {
-            id: event.id.toString(),
-            title: event.title,
-            description: event.description,
-            location: `${event.addressLine}, ${event.city}`,
-            date: new Date(event.datetime).toLocaleDateString('en-US', {
-              month: 'short',
-              day: 'numeric',
-            }),
-            time: new Date(event.datetime).toLocaleTimeString('en-US', {
-              hour: 'numeric',
-              minute: '2-digit',
-            }),
-            attendees: event._count.attendees,
-            maxAttendees: event.maxAttendees,
-            category: formatCategory(event.category),
-            priceType: event.priceType.toLowerCase() as 'free' | 'split_bill',
-            creator: {
-              name: event.host?.name || 'Hangout Host',
-              avatar: event.host?.selfie || 'https://i.pravatar.cc/40?img=1',
-            },
-          };
-
+          const idStr = String(event.id);
+          const joined = joinedEvents.has(idStr);
           return (
             <EventCard
               key={event.id}
-              {...eventProps}
-              isLiked={likedEvents.has(eventProps.id)}
-              onLike={() => handleLike(eventProps.id)}
-              onJoin={() => handleJoin(eventProps.id)}
+              id={idStr}
+              title={event.title}
+              description={event.description}
+              location={`${event.addressLine}, ${event.city}`}
+              date={new Date(event.datetime).toLocaleDateString('en-US', {
+                month: 'short',
+                day: 'numeric',
+              })}
+              time={new Date(event.datetime).toLocaleTimeString('en-US', {
+                hour: 'numeric',
+                minute: '2-digit',
+              })}
+              attendees={event._count.attendees}
+              maxAttendees={event.maxAttendees}
+              category={formatCategory(event.category)}
+              priceType={event.priceType.toLowerCase() as 'free' | 'split_bill'}
+              creator={{
+                name: event.host?.name || 'Hangout Host',
+                avatar: event.host?.selfie || 'https://i.pravatar.cc/40?img=1',
+              }}
+              isLiked={likedEvents.has(idStr)}
+              isJoined={joined}
+              onLike={() => handleLike(idStr)}
+              onJoin={() => (joined ? setUnjoinDialogFor(event.id) : setJoinDialogFor(event.id))}
             />
           );
         })}
