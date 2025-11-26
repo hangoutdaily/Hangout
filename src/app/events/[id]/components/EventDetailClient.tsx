@@ -14,14 +14,26 @@ import {
 } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { getEvent, getMyLikes, likeEvent, unlikeEvent } from '@/api/event';
+import {
+  cancelJoinEvent,
+  getEvent,
+  getMyJoinedEvents,
+  getMyLikes,
+  joinEvent,
+  likeEvent,
+  unlikeEvent,
+} from '@/api/event';
 import { AuthContext } from '@/context/AuthContext';
+import ConfirmUnjoinDialog from '@/components/layout/ConfirmUnjoinDialog';
+import JoinEventDialog from '@/components/layout/JoinEventDialog';
+import { launchConfetti } from '@/lib/confetti';
 
 interface EventDetailClientProps {
   id: string;
 }
 
 type EventHost = {
+  id: number;
   name: string | null;
   selfie: string | null;
 };
@@ -40,12 +52,24 @@ type EventDetail = {
   attendees: { id: number }[];
 };
 
+const isHostOfEvent = (user: any, hostId?: number | null) => {
+  if (!user || hostId == null) return false;
+
+  const possibleIds = [user.profileId, user.id, user.profile?.id].filter((v) => v != null);
+
+  return possibleIds.some((val) => Number(val) === Number(hostId));
+};
+
 export default function EventDetailClient({ id }: EventDetailClientProps) {
   const { user } = useContext(AuthContext);
   const [event, setEvent] = useState<EventDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [isLiked, setIsLiked] = useState(false);
-  const [hasJoined, setHasJoined] = useState(false);
+  const [showJoinDialog, setShowJoinDialog] = useState(false);
+  const [showUnjoinDialog, setShowUnjoinDialog] = useState(false);
+  const [requestStatus, setRequestStatus] = useState<'NONE' | 'REQUESTED' | 'JOINED' | 'REJECTED'>(
+    'NONE'
+  );
 
   const attendeeMetadata = {
     genderRatio: { male: 45, female: 55 },
@@ -78,31 +102,42 @@ export default function EventDetailClient({ id }: EventDetailClientProps) {
         const res = await getEvent(id);
         const ev: EventDetail = res.data.event;
         setEvent(ev);
-        if (user) {
-          try {
-            const likesRes = await getMyLikes();
-            const likedEventIds: number[] = likesRes.data.likedEventIds ?? [];
-            setIsLiked(likedEventIds.includes(ev.id));
-          } catch {
-            setIsLiked(false);
-          }
-        } else {
-          setIsLiked(false);
+
+        if (!user) return;
+
+        const likesRes = await getMyLikes();
+        setIsLiked(likesRes.data.likedEventIds?.includes(ev.id));
+
+        const joinedRes = await getMyJoinedEvents();
+        const requested = joinedRes.data.requestedEventIds || [];
+        const confirmed = joinedRes.data.joinedEventIds || [];
+
+        const hostCheck = isHostOfEvent(user, ev.host?.id);
+
+        // If current user is host → always JOINED, never unjoin
+        if (hostCheck) {
+          setRequestStatus('JOINED');
+          return;
         }
-      } catch (err) {
-        console.error('Failed to load event', err);
-        setEvent(null);
+
+        // your original logic
+        if (confirmed.includes(ev.id)) {
+          setRequestStatus('JOINED');
+        } else if (requested.includes(ev.id)) {
+          setRequestStatus('REQUESTED');
+        } else {
+          setRequestStatus('NONE');
+        }
       } finally {
         setLoading(false);
       }
     }
-
     load();
   }, [id, user]);
 
   const handleToggleLike = async () => {
     if (!user) {
-      alert('Login required to like events');
+      window.location.href = '/login';
       return;
     }
     const next = !isLiked;
@@ -134,6 +169,7 @@ export default function EventDetailClient({ id }: EventDetailClientProps) {
   });
 
   const attendeesCount = event.attendees?.length ?? 0;
+  const isHost = isHostOfEvent(user, event.host?.id);
 
   return (
     <div className="min-h-screen bg-background">
@@ -365,7 +401,7 @@ export default function EventDetailClient({ id }: EventDetailClientProps) {
           </div>
         </div>
 
-        {hasJoined && (
+        {requestStatus === 'JOINED' && (
           <div className="mb-12">
             <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
               <MessageCircle className="h-5 w-5" />
@@ -404,20 +440,66 @@ export default function EventDetailClient({ id }: EventDetailClientProps) {
           </div>
         )}
 
-        <div className="flex gap-3 pt-8 border-t border-border">
-          {!hasJoined ? (
+        <div className="flex pt-8 border-t border-border">
+          {isHost ? (
             <button
-              onClick={() => setHasJoined(true)}
-              className="flex-1 px-6 py-3 bg-accent text-accent-foreground rounded-lg hover:opacity-90 transition-opacity font-semibold"
+              disabled
+              className="flex-1 px-6 py-3 rounded-lg font-semibold bg-secondary text-muted-foreground cursor-default"
             >
-              Request to Join
+              You are hosting this event
             </button>
           ) : (
-            <button className="flex-1 px-6 py-3 bg-secondary text-foreground rounded-lg hover:bg-secondary/80 transition-colors font-semibold">
-              Cancel Request
+            <button
+              onClick={() => {
+                if (!user) {
+                  window.location.href = '/login';
+                  return;
+                }
+                if (requestStatus === 'JOINED' || requestStatus === 'REQUESTED') {
+                  setShowUnjoinDialog(true);
+                } else {
+                  setShowJoinDialog(true);
+                }
+              }}
+              className={`flex-1 px-6 py-3 rounded-lg font-semibold transition
+                ${
+                  requestStatus === 'JOINED'
+                    ? 'bg-green-100 text-green-700'
+                    : requestStatus === 'REQUESTED'
+                      ? 'bg-yellow-100 text-yellow-700'
+                      : 'bg-accent text-accent-foreground hover:opacity-90'
+                }
+              `}
+            >
+              {requestStatus === 'JOINED'
+                ? 'Joined'
+                : requestStatus === 'REQUESTED'
+                  ? 'Requested'
+                  : 'Request to Join'}
             </button>
           )}
         </div>
+
+        <JoinEventDialog
+          open={showJoinDialog}
+          onClose={() => setShowJoinDialog(false)}
+          onSubmit={async (message) => {
+            await joinEvent(event.id, message);
+            setRequestStatus('REQUESTED');
+            setShowJoinDialog(false);
+            launchConfetti();
+          }}
+        />
+
+        <ConfirmUnjoinDialog
+          open={showUnjoinDialog}
+          onClose={() => setShowUnjoinDialog(false)}
+          onConfirm={async () => {
+            await cancelJoinEvent(event.id);
+            setRequestStatus('NONE');
+            setShowUnjoinDialog(false);
+          }}
+        />
       </div>
     </div>
   );
