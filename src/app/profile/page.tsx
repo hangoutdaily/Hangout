@@ -38,13 +38,35 @@ import {
   X,
   User,
 } from 'lucide-react';
+import Link from 'next/link';
 import { Skeleton } from '@/components/ui/shadcn/skeleton';
 import { Button } from '@/components/ui/shadcn/button';
 import { Instagram, Twitter, Facebook, Linkedin } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { getProfile, updateProfile } from '@/api/profile';
+import { getMyLikes, likeEvent, unlikeEvent } from '@/api/event';
 import { Field, FieldInput, FieldSelect, FieldTextarea } from '@/components/ui/FormField';
 import { Label } from '@/components/ui/shadcn/label';
+import EventCard from '@/components/ui/EventCard';
+
+interface HostedEvent {
+  id: number;
+  title: string;
+  description: string;
+  city: string;
+  addressLine: string;
+  datetime: string;
+  maxAttendees: number;
+  category: string;
+  priceType: 'FREE' | 'SPLIT_BILL';
+  host: {
+    name: string | null;
+    selfie: string | null;
+  };
+  _count: {
+    attendees: number;
+  };
+}
 
 interface ProfileData {
   id: number;
@@ -68,13 +90,7 @@ interface ProfileData {
   photos: string[];
   selfie: string;
   socialLinks: Record<string, string>;
-  createdEvents: {
-    id: number;
-    title: string;
-    datetime: string;
-    city: string;
-    state: string;
-  }[];
+  createdEvents: HostedEvent[];
 }
 
 const TRAITS = [
@@ -202,6 +218,127 @@ const formatEnum = (val?: string) => {
     .replace(/\b\w/g, (c) => c.toUpperCase());
 };
 
+const formatCategory = (cat: string) => {
+  return cat
+    .split('_')
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
+};
+
+function HostedEventsGrid({
+  events,
+  likedEventIds,
+  onLike,
+}: {
+  events: HostedEvent[];
+  likedEventIds: Set<string>;
+  onLike: (eventId: string) => void;
+}) {
+  if (events.length === 0) {
+    return (
+      <div className="py-10 text-center border-2 border-dashed border-border rounded-xl mt-8 p-8 bg-secondary/30">
+        <Calendar className="w-10 h-10 text-muted-foreground mx-auto mb-4" />
+        <h3 className="text-xl font-semibold text-foreground mb-2">
+          You haven't hosted any Hangouts yet.
+        </h3>
+        <p className="text-muted-foreground mb-4">
+          Ready to be a host? Share your passion with others and create your first hangout!
+        </p>
+        <Link href="/create" passHref legacyBehavior>
+          <Button>Create New Hangout</Button>
+        </Link>
+      </div>
+    );
+  }
+
+  return (
+    <div className="mt-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      {events.map((event) => {
+        const eventProps = {
+          id: event.id.toString(),
+          title: event.title,
+          description: event.description,
+          location: `${event.addressLine}, ${event.city}`,
+          date: new Date(event.datetime).toLocaleDateString('en-US', {
+            month: 'short',
+            day: 'numeric',
+          }),
+          time: new Date(event.datetime).toLocaleTimeString('en-US', {
+            hour: 'numeric',
+            minute: '2-digit',
+          }),
+          attendees: event._count.attendees,
+          maxAttendees: event.maxAttendees,
+          category: formatCategory(event.category),
+          priceType: event.priceType.toLowerCase() as 'free' | 'split_bill',
+          creator: {
+            name: event.host?.name || 'Hangout Host',
+            avatar: event.host?.selfie || 'https://i.pravatar.cc/40?img=1',
+          },
+        };
+
+        return (
+          <EventCard
+            key={event.id}
+            {...eventProps}
+            isLiked={likedEventIds.has(eventProps.id)}
+            onLike={() => onLike(eventProps.id)}
+            onJoin={() => console.log('Cannot join own event')}
+          />
+        );
+      })}
+    </div>
+  );
+}
+
+function ReviewsSection({ reviews }: { reviews: typeof DUMMY_REVIEWS }) {
+  if (reviews.length === 0) {
+    return (
+      <div className="py-10 text-center border-2 border-dashed border-border rounded-xl mt-8 p-8 bg-secondary/30">
+        <Star className="w-10 h-10 text-muted-foreground mx-auto mb-4" />
+        <h3 className="text-xl font-semibold text-foreground mb-2">No Reviews Yet</h3>
+        <p className="text-muted-foreground">
+          Gather reviews after you host your first few successful hangouts!
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4 pt-8">
+      {reviews.map((r, idx) => (
+        <div key={idx} className="border border-border rounded-xl p-4">
+          <div className="flex items-center gap-3">
+            <Image
+              src={r.avatar}
+              alt={r.reviewer}
+              width={40}
+              height={40}
+              className="rounded-full"
+            />
+            <div>
+              <p className="font-medium">{r.reviewer}</p>
+              <div className="flex">
+                {[...Array(5)].map((_, i) => (
+                  <Star
+                    key={i}
+                    className={cn(
+                      'w-4 h-4',
+                      i < r.rating ? 'text-yellow-500 fill-yellow-500' : 'text-muted-foreground'
+                    )}
+                  />
+                ))}
+              </div>
+            </div>
+          </div>
+          <p className="text-sm mt-3 italic">{r.comment}</p>
+          <p className="text-xs text-muted-foreground text-right mt-2">{r.time}</p>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export default function ProfileScreen() {
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -211,6 +348,8 @@ export default function ProfileScreen() {
   const [formData, setFormData] = useState<ProfileData | null>(null);
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const [isSaving, setIsSaving] = useState(false);
+  const [activeTab, setActiveTab] = useState<'profile' | 'hosted' | 'reviews'>('profile');
+  const [likedEventIds, setLikedEventIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     fetchProfile();
@@ -219,14 +358,48 @@ export default function ProfileScreen() {
   async function fetchProfile() {
     try {
       const res = await getProfile();
-      setProfile(res.data.profile);
-      setFormData(res.data.profile);
+      const profileData: ProfileData = res.data.profile;
+      setProfile(profileData);
+      setFormData(profileData);
+
+      try {
+        const likesRes = await getMyLikes();
+        const likedIds = new Set<string>(likesRes.data.likedEventIds?.map(String) || []);
+        setLikedEventIds(likedIds);
+      } catch (likesErr) {}
     } catch (err: any) {
       setError(err.response?.data?.error || 'Failed to load profile.');
     } finally {
       setLoading(false);
     }
   }
+
+  const handleLike = async (eventId: string) => {
+    const isCurrentlyLiked = likedEventIds.has(eventId);
+
+    setLikedEventIds((prev) => {
+      const updated = new Set(prev);
+      if (isCurrentlyLiked) updated.delete(eventId);
+      else updated.add(eventId);
+      return updated;
+    });
+
+    try {
+      if (isCurrentlyLiked) {
+        await unlikeEvent(eventId);
+      } else {
+        await likeEvent(eventId);
+      }
+    } catch (error) {
+      setLikedEventIds((prev) => {
+        const updated = new Set(prev);
+        if (isCurrentlyLiked) updated.add(eventId);
+        else updated.delete(eventId);
+        return updated;
+      });
+      alert('Failed to update wishlist status. Please try again.');
+    }
+  };
 
   const handleStartEdit = () => {
     if (!profile) return;
@@ -294,7 +467,6 @@ export default function ProfileScreen() {
       setProfile(formData);
       setIsEditing(false);
     } catch (err) {
-      console.error('Update failed', err);
     } finally {
       setIsSaving(false);
     }
@@ -355,222 +527,243 @@ export default function ProfileScreen() {
   // --- View Mode ---
   if (!isEditing) {
     return (
-      <div className="space-y-16 max-w-3xl mx-auto px-4 py-10 relative">
-        <div className="absolute top-10 right-4 z-10">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleStartEdit}
-            className="gap-2 bg-background border-border hover:text-foreground hover:border-foreground hover:bg-secondary/50 transition-all "
-          >
-            <Edit2 className="w-4 h-4" /> Edit
-          </Button>
-        </div>
-
-        <div>
-          <SectionHeader
-            title={`${profile.name || 'Hangouter'}, ${profile.age || 'N/A'}`}
-            subtitle={profile.city || 'Location Unknown'}
-          />
-          {profile.bio && <p className="text-base leading-relaxed pr-20">{profile.bio}</p>}
-        </div>
-
-        <div className="flex gap-4 overflow-x-auto pb-3 snap-x scrollbar-hide">
-          {displayPhotos.map((src: string, i: number) => (
-            <div
-              key={i}
-              className="w-64 h-80 rounded-2xl overflow-hidden bg-muted flex-shrink-0 snap-center"
+      <div className="min-h-screen bg-background">
+        <div className="space-y-16 max-w-3xl mx-auto px-4 py-10 relative">
+          <div className="absolute top-10 right-4 z-10">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleStartEdit}
+              className="gap-2 bg-background border-border hover:text-foreground hover:border-foreground hover:bg-secondary/50 transition-all "
             >
-              <Image
-                src={src || ''}
-                alt="Profile photo"
-                width={300}
-                height={500}
-                className="object-cover w-full h-full"
-              />
-            </div>
-          ))}
-        </div>
-
-        <section className="space-y-3">
-          <SectionHeader title="The Basics" subtitle="Stuff you should probably know" />
-          {profile.gender && (
-            <ProfileInfoItem icon={User} label="Gender" value={formatEnum(profile.gender)} />
-          )}
-          {profile.education && (
-            <ProfileInfoItem icon={GraduationCap} label="My education" value={profile.education} />
-          )}
-          {profile.lifeEngagement && (
-            <ProfileInfoItem icon={Zap} label="My Life Right Now" value={profile.lifeEngagement} />
-          )}
-          {profile.languages.length > 0 && (
-            <ProfileInfoItem icon={Languages} label="Speaks" value={profile.languages.join(', ')} />
-          )}
-          {profile.city && (
-            <ProfileInfoItem icon={MapPin} label="Lives in" value={`${profile.city}, India`} />
-          )}
-          {profile.lookingFor && (
-            <ProfileInfoItem icon={SearchCheck} label="Here For" value={profile.lookingFor} />
-          )}
-          <ProfileInfoItem icon={ShieldCheck} label="Identity verified" value={null} />
-        </section>
-
-        <section className="space-y-3">
-          <SectionHeader title="What I’m Like" subtitle="Traits, vibes & how I show up" />
-          {profile.traits.length > 0 && (
-            <div>
-              <p className="text-muted-foreground text-sm mb-2 flex items-center gap-2">
-                <Star className="w-4 h-4" /> Traits
-              </p>
-              <div className="flex flex-wrap gap-2">
-                {profile.traits.map((t: string) => (
-                  <span
-                    key={t}
-                    className="px-4 py-2 rounded-full text-sm font-medium bg-foreground text-background"
-                  >
-                    {t}
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
-          {profile.interests.length > 0 && (
-            <div>
-              <p className="text-muted-foreground text-sm mb-2 flex items-center gap-2">
-                <Heart className="w-4 h-4" /> Interests
-              </p>
-              <div className="flex flex-wrap gap-2">
-                {profile.interests.map((i: string) => (
-                  <span
-                    key={i}
-                    className="px-4 py-2 rounded-full text-sm font-medium bg-foreground text-background"
-                  >
-                    {i}
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
-        </section>
-
-        {(profile.topSongs || profile.topPlaces || profile.joyfulMoment) && (
-          <section className="space-y-3">
-            <SectionHeader title="My Favourites" subtitle="Small things that define me" />
-            {profile.topSongs && (
-              <div>
-                <p className="text-muted-foreground text-sm flex items-center gap-2 mb-1">
-                  <Music className="w-4 h-4" /> Top Songs
-                </p>
-                <p>{profile.topSongs}</p>
-              </div>
-            )}
-            {profile.topPlaces && (
-              <div>
-                <p className="text-muted-foreground text-sm flex items-center gap-2 mb-1">
-                  <MapPin className="w-4 h-4" /> Favorite Places
-                </p>
-                <p>{profile.topPlaces}</p>
-              </div>
-            )}
-            {profile.joyfulMoment && (
-              <div>
-                <p className="text-muted-foreground text-sm flex items-center gap-2 mb-1">
-                  <Star className="w-4 h-4" /> Joyful Moment
-                </p>
-                <p>{profile.joyfulMoment}</p>
-              </div>
-            )}
-          </section>
-        )}
-
-        <section className="space-y-3">
-          <SectionHeader title="Lifestyle" subtitle="Little habits that say a lot" />
-          <ProfileInfoItem icon={GlassWater} label="Drinks" value={formatEnum(profile.drinks)} />
-          <ProfileInfoItem icon={Cigarette} label="Smokes" value={formatEnum(profile.smoke)} />
-          <ProfileInfoItem icon={Leaf} label="Weed" value={formatEnum(profile.weed)} />
-        </section>
-
-        {profile.socialLinks && Object.keys(profile.socialLinks).length > 0 && (
-          <section className="space-y-3">
-            <SectionHeader title="Find Me Online" subtitle="A few links before we meet for real" />
-            <div className="flex gap-3 flex-wrap">
-              {Object.entries(profile.socialLinks).map(([key, val]) => {
-                const social = SOCIALS.find((s) => s.id === key);
-                const Icon = social?.Icon;
-                if (!val) return null;
-                return (
-                  <a
-                    key={key}
-                    href={val as string}
-                    target="_blank"
-                    className="w-12 h-12 flex items-center justify-center rounded-lg border border-border hover:border-accent hover:bg-accent/10 transition-all"
-                  >
-                    {Icon && <Icon className="w-6 h-6" />}
-                  </a>
-                );
-              })}
-            </div>
-          </section>
-        )}
-
-        <section className="space-y-3">
-          <SectionHeader title="Hosted Hangouts" subtitle="Things I've organised" />
-          <div className="space-y-3">
-            {profile.createdEvents.length > 0 ? (
-              profile.createdEvents.map((ev: any) => (
-                <div key={ev.id} className="border-b border-border pb-3">
-                  <div className="flex items-center gap-2 text-muted-foreground text-sm mb-1">
-                    <Calendar className="w-4 h-4" />
-                    {ev.city}, {ev.state}
-                  </div>
-                  <p className="font-medium">{ev.title}</p>
-                  <p className="text-muted-foreground text-sm">
-                    {new Date(ev.datetime).toLocaleDateString()}
-                  </p>
-                </div>
-              ))
-            ) : (
-              <p className="text-muted-foreground">No hangouts hosted yet.</p>
-            )}
+              <Edit2 className="w-4 h-4" /> Edit
+            </Button>
           </div>
-        </section>
 
-        <section className="space-y-3">
-          <SectionHeader title="Reviews" subtitle="What people say about my events" />
-          <div className="space-y-4">
-            {DUMMY_REVIEWS.map((r, idx) => (
-              <div key={idx} className="border-b border-border pb-4">
-                <div className="flex items-center gap-3">
-                  <Image
-                    src={r.avatar}
-                    alt={r.reviewer}
-                    width={40}
-                    height={40}
-                    className="rounded-full"
-                  />
-                  <div>
-                    <p className="font-medium">{r.reviewer}</p>
-                    <div className="flex">
-                      {[...Array(5)].map((_, i) => (
-                        <Star
-                          key={i}
-                          className={cn(
-                            'w-4 h-4',
-                            i < r.rating
-                              ? 'text-yellow-500 fill-yellow-500'
-                              : 'text-muted-foreground'
-                          )}
-                        />
-                      ))}
-                    </div>
-                  </div>
-                </div>
-                <p className="text-sm mt-2 italic">{r.comment}</p>
-                <p className="text-xs text-muted-foreground text-right mt-1">{r.time}</p>
+          <div>
+            <SectionHeader
+              title={`${profile.name || 'Hangouter'}, ${profile.age || 'N/A'}`}
+              subtitle={profile.city || 'Location Unknown'}
+            />
+            {profile.bio && <p className="text-base leading-relaxed pr-20">{profile.bio}</p>}
+          </div>
+
+          <div className="flex gap-4 overflow-x-auto pb-3 snap-x scrollbar-hide">
+            {displayPhotos.map((src: string, i: number) => (
+              <div
+                key={i}
+                className="w-64 h-80 rounded-2xl overflow-hidden bg-muted flex-shrink-0 snap-center"
+              >
+                <Image
+                  src={src || ''}
+                  alt="Profile photo"
+                  width={300}
+                  height={500}
+                  className="object-cover w-full h-full"
+                />
               </div>
             ))}
           </div>
-        </section>
+
+          <div className="border-b border-border">
+            <div className="flex gap-6 -mb-px overflow-x-auto pb-1 scrollbar-hide">
+              <button
+                onClick={() => setActiveTab('profile')}
+                className={cn(
+                  'px-1 pb-2 text-lg font-semibold transition-colors flex-shrink-0',
+                  activeTab === 'profile'
+                    ? 'border-b-2 border-foreground text-foreground'
+                    : 'text-muted-foreground hover:text-foreground/80'
+                )}
+              >
+                About Me
+              </button>
+              <button
+                onClick={() => setActiveTab('hosted')}
+                className={cn(
+                  'px-1 pb-2 text-lg font-semibold transition-colors flex items-center gap-1 flex-shrink-0',
+                  activeTab === 'hosted'
+                    ? 'border-b-2 border-foreground text-foreground'
+                    : 'text-muted-foreground hover:text-foreground/80'
+                )}
+              >
+                Hosted Hangouts{' '}
+                <span className="text-sm font-medium">({profile.createdEvents.length})</span>
+              </button>
+              <button
+                onClick={() => setActiveTab('reviews')}
+                className={cn(
+                  'px-1 pb-2 text-lg font-semibold transition-colors flex-shrink-0',
+                  activeTab === 'reviews'
+                    ? 'border-b-2 border-foreground text-foreground'
+                    : 'text-muted-foreground hover:text-foreground/80'
+                )}
+              >
+                Reviews
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {activeTab === 'profile' && (
+          <div className="space-y-16 max-w-3xl mx-auto px-4 pb-16">
+            <section className="space-y-3">
+              <SectionHeader title="The Basics" subtitle="Stuff you should probably know" />
+              {profile.gender && (
+                <ProfileInfoItem icon={User} label="Gender" value={formatEnum(profile.gender)} />
+              )}
+              {profile.education && (
+                <ProfileInfoItem
+                  icon={GraduationCap}
+                  label="My education"
+                  value={profile.education}
+                />
+              )}
+              {profile.lifeEngagement && (
+                <ProfileInfoItem
+                  icon={Zap}
+                  label="My Life Right Now"
+                  value={profile.lifeEngagement}
+                />
+              )}
+              {profile.languages.length > 0 && (
+                <ProfileInfoItem
+                  icon={Languages}
+                  label="Speaks"
+                  value={profile.languages.join(', ')}
+                />
+              )}
+              {profile.city && (
+                <ProfileInfoItem icon={MapPin} label="Lives in" value={`${profile.city}, India`} />
+              )}
+              {profile.lookingFor && (
+                <ProfileInfoItem icon={SearchCheck} label="Here For" value={profile.lookingFor} />
+              )}
+              <ProfileInfoItem icon={ShieldCheck} label="Identity verified" value={null} />
+            </section>
+
+            <section className="space-y-3">
+              <SectionHeader title="What I’m Like" subtitle="Traits, vibes & how I show up" />
+              {profile.traits.length > 0 && (
+                <div>
+                  <p className="text-muted-foreground text-sm mb-2 flex items-center gap-2">
+                    <Star className="w-4 h-4" /> Traits
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {profile.traits.map((t: string) => (
+                      <span
+                        key={t}
+                        className="px-4 py-2 rounded-full text-sm font-medium bg-foreground text-background"
+                      >
+                        {t}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {profile.interests.length > 0 && (
+                <div>
+                  <p className="text-muted-foreground text-sm mb-2 flex items-center gap-2">
+                    <Heart className="w-4 h-4" /> Interests
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {profile.interests.map((i: string) => (
+                      <span
+                        key={i}
+                        className="px-4 py-2 rounded-full text-sm font-medium bg-foreground text-background"
+                      >
+                        {i}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </section>
+
+            {(profile.topSongs || profile.topPlaces || profile.joyfulMoment) && (
+              <section className="space-y-3">
+                <SectionHeader title="My Favourites" subtitle="Small things that define me" />
+                {profile.topSongs && (
+                  <div>
+                    <p className="text-muted-foreground text-sm flex items-center gap-2 mb-1">
+                      <Music className="w-4 h-4" /> Top Songs
+                    </p>
+                    <p>{profile.topSongs}</p>
+                  </div>
+                )}
+                {profile.topPlaces && (
+                  <div>
+                    <p className="text-muted-foreground text-sm flex items-center gap-2 mb-1">
+                      <MapPin className="w-4 h-4" /> Favorite Places
+                    </p>
+                    <p>{profile.topPlaces}</p>
+                  </div>
+                )}
+                {profile.joyfulMoment && (
+                  <div>
+                    <p className="text-muted-foreground text-sm flex items-center gap-2 mb-1">
+                      <Star className="w-4 h-4" /> Joyful Moment
+                    </p>
+                    <p>{profile.joyfulMoment}</p>
+                  </div>
+                )}
+              </section>
+            )}
+
+            <section className="space-y-3">
+              <SectionHeader title="Lifestyle" subtitle="Little habits that say a lot" />
+              <ProfileInfoItem
+                icon={GlassWater}
+                label="Drinks"
+                value={formatEnum(profile.drinks)}
+              />
+              <ProfileInfoItem icon={Cigarette} label="Smokes" value={formatEnum(profile.smoke)} />
+              <ProfileInfoItem icon={Leaf} label="Weed" value={formatEnum(profile.weed)} />
+            </section>
+
+            {profile.socialLinks && Object.keys(profile.socialLinks).length > 0 && (
+              <section className="space-y-3">
+                <SectionHeader
+                  title="Find Me Online"
+                  subtitle="A few links before we meet for real"
+                />
+                <div className="flex gap-3 flex-wrap">
+                  {Object.entries(profile.socialLinks).map(([key, val]) => {
+                    const social = SOCIALS.find((s) => s.id === key);
+                    const Icon = social?.Icon;
+                    if (!val) return null;
+                    return (
+                      <a
+                        key={key}
+                        href={val as string}
+                        target="_blank"
+                        className="w-12 h-12 flex items-center justify-center rounded-lg border border-border hover:border-accent hover:bg-accent/10 transition-all"
+                      >
+                        {Icon && <Icon className="w-6 h-6" />}
+                      </a>
+                    );
+                  })}
+                </div>
+              </section>
+            )}
+          </div>
+        )}
+
+        {activeTab === 'hosted' && (
+          <div className="mx-auto max-w-7xl px-4 pb-16">
+            <HostedEventsGrid
+              events={profile.createdEvents}
+              likedEventIds={likedEventIds}
+              onLike={handleLike}
+            />
+          </div>
+        )}
+
+        {activeTab === 'reviews' && (
+          <div className="max-w-3xl mx-auto px-4 pb-16">
+            <ReviewsSection reviews={DUMMY_REVIEWS} />
+          </div>
+        )}
       </div>
     );
   }
@@ -683,7 +876,7 @@ export default function ProfileScreen() {
                   'px-3 py-1.5 rounded-full text-xs font-medium border',
                   formData.languages.includes(lang)
                     ? 'bg-foreground text-background border-foreground'
-                    : 'bg-background border-border'
+                    : 'bg-background border-border text-foreground hover:border-foreground'
                 )}
               >
                 {lang}
