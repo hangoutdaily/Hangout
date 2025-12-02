@@ -8,6 +8,8 @@ import { Field, FieldInput, FieldTextarea, FieldSelect } from '@/components/ui/F
 import { Button } from '@/components/ui/shadcn/button';
 import { cn } from '@/lib/utils';
 import { createEvent, getCategories } from '@/api/event';
+import { Input } from '@/components/ui/shadcn/input';
+import { DatePicker } from './components/DatePicker';
 
 type Category = string;
 type PriceType = 'FREE' | 'SPLIT_BILL';
@@ -51,25 +53,25 @@ export default function CreateEventForm() {
   const [errors, setErrors] = useState<Partial<Record<keyof EventForm, string>>>({});
   const [submitted, setSubmitted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const dateRef = useRef<HTMLInputElement>(null);
-  const timeRef = useRef<HTMLInputElement>(null);
+  const [generalError, setGeneralError] = useState<string | null>(null);
 
   useEffect(() => {
     async function fetchCategories() {
       try {
         const res = await getCategories();
-        console.log('res', res);
         const enumValues = res.data.categories as string[];
 
         const displayCategories = enumValues.map(formatCategoryName);
         setCategories(displayCategories);
+
         const newCategoryMap = displayCategories.reduce(
-          (acc, displayName, index) => {
-            acc[displayName] = enumValues[index];
+          (acc, displayName, idx) => {
+            acc[displayName] = enumValues[idx];
             return acc;
           },
           {} as Record<string, string>
         );
+
         setCategoryMap(newCategoryMap);
       } catch (error) {
         console.error('Failed to fetch categories', error);
@@ -87,16 +89,24 @@ export default function CreateEventForm() {
     const f = { ...form, ...(next || {}) };
     const e: Partial<Record<keyof EventForm, string>> = {};
 
-    if (!f.title) e.title = 'Required';
-    if (!f.description) e.description = 'Required';
-    if (!f.category) e.category = 'Required';
-    if (!f.city) e.city = 'Required';
-    if (!f.state) e.state = 'Required';
-    if (!f.addressLine) e.addressLine = 'Required';
-    if (!f.date) e.date = 'Required';
-    if (!f.time) e.time = 'Required';
-    if (!f.maxAttendees || Number(f.maxAttendees) < 1) e.maxAttendees = 'At least 1 attendee';
-    if (!f.priceType) e.priceType = 'Select payment type';
+    if (!f.title) e.title = 'Title is required';
+    else if (f.title.length < 5) e.title = 'Title must be at least 5 characters long';
+
+    if (!f.description) e.description = 'Description is required';
+    else if (f.description.length < 5)
+      e.description = 'Description must be at least 5 characters long';
+
+    if (!f.category) e.category = 'Category is required';
+    if (!f.city) e.city = 'City is required';
+    if (!f.state) e.state = 'State is required';
+    if (!f.addressLine) e.addressLine = 'Address line is required';
+
+    if (!f.date) e.date = 'Date is required';
+    if (!f.time) e.time = 'Time is required';
+    if (!f.maxAttendees || Number(f.maxAttendees) < 1)
+      e.maxAttendees = 'At least 1 attendee is required';
+
+    if (!f.priceType) e.priceType = 'Price type is required';
 
     setErrors(e);
     return Object.keys(e).length === 0;
@@ -113,9 +123,14 @@ export default function CreateEventForm() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setSubmitted(true);
+    setGeneralError(null);
     if (!validate()) return;
     setIsLoading(true);
     try {
+      const [day, month, year] = form.date.split('/').map(Number);
+      const [hour, minute] = form.time.split(':').map(Number);
+      const datetime = new Date(year, month - 1, day, hour, minute);
+
       const payload = {
         title: form.title,
         description: form.description,
@@ -123,24 +138,22 @@ export default function CreateEventForm() {
         city: form.city,
         state: form.state,
         addressLine: form.addressLine,
-        datetime: new Date(`${form.date}T${form.time}`),
+        datetime: datetime.toISOString(),
         maxAttendees: Number(form.maxAttendees),
         priceType: form.priceType,
       };
-      const res = await createEvent(payload);
-      // TODO - redirect to the new event's page
+
+      await createEvent(payload);
       router.push('/');
     } catch (err: any) {
-      console.error('Event creation failed:', err);
-      setErrors({
-        title: err.response?.data?.error || 'Failed to create event. Please try again.',
-      });
+      setGeneralError(err.response?.data?.error || 'Failed to create event. Please try again.');
       setIsLoading(false);
     }
   }
 
   return (
     <form onSubmit={handleSubmit} className="space-y-8">
+      {generalError && <p className="text-sm text-destructive">{generalError}</p>}
       <Section icon={Tag} title="Basic Information" subtitle="About your event">
         <Field label="Title" error={errors.title}>
           <FieldInput
@@ -156,7 +169,7 @@ export default function CreateEventForm() {
             value={form.category}
             onChange={(val) => update('category', val as Category)}
             options={categories}
-            placeholder={categories.length > 0 ? 'Select category' : 'Loading categories...'}
+            placeholder={categories.length ? 'Select category' : 'Loading categories...'}
             error={!!errors.category}
           />
         </Field>
@@ -204,28 +217,23 @@ export default function CreateEventForm() {
       <Section icon={Calendar} title="When & Capacity" subtitle="Choose schedule & attendees">
         <div className="grid sm:grid-cols-2 gap-4">
           <Field label="Date" error={errors.date}>
-            <div onClick={() => dateRef.current?.showPicker()}>
-              <FieldInput
-                ref={dateRef}
-                type="date"
-                value={form.date}
-                onChange={(e) => update('date', e.target.value)}
-                error={!!errors.date}
-                min={new Date().toISOString().split('T')[0]}
-              />
-            </div>
+            <DatePicker
+              value={form.date}
+              onChange={(val) => update('date', val)}
+              error={!!errors.date}
+            />
           </Field>
 
           <Field label="Time" error={errors.time}>
-            <div onClick={() => timeRef.current?.showPicker()}>
-              <FieldInput
-                ref={timeRef}
-                type="time"
-                value={form.time}
-                onChange={(e) => update('time', e.target.value)}
-                error={!!errors.time}
-              />
-            </div>
+            <Input
+              type="time"
+              value={form.time}
+              onChange={(e) => update('time', e.target.value)}
+              className={cn(
+                !!errors.time && 'border-destructive focus-visible:ring-destructive',
+                '[&::-webkit-calendar-picker-indicator]:hidden [&::-webkit-calendar-picker-indicator]:appearance-none'
+              )}
+            />
           </Field>
         </div>
 
@@ -284,17 +292,7 @@ export default function CreateEventForm() {
   );
 }
 
-function Section({
-  icon: Icon,
-  title,
-  subtitle,
-  children,
-}: {
-  icon: React.ElementType;
-  title: string;
-  subtitle: string;
-  children: React.ReactNode;
-}) {
+function Section({ icon: Icon, title, subtitle, children }: any) {
   return (
     <motion.div
       initial={{ opacity: 0, y: 8 }}
@@ -306,27 +304,19 @@ function Section({
         <div className="w-10 h-10 rounded-full bg-accent/10 grid place-items-center">
           <Icon className="h-5 w-5 text-accent" />
         </div>
+
         <div>
           <h2 className="text-lg font-semibold text-foreground">{title}</h2>
           <p className="text-sm text-muted-foreground">{subtitle}</p>
         </div>
       </div>
+
       {children}
     </motion.div>
   );
 }
 
-function PriceOption({
-  label,
-  description,
-  selected,
-  onClick,
-}: {
-  label: string;
-  description: string;
-  selected: boolean;
-  onClick: () => void;
-}) {
+function PriceOption({ label, description, selected, onClick }: any) {
   return (
     <button
       type="button"
