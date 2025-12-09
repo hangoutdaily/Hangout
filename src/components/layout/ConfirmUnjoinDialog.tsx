@@ -11,7 +11,17 @@ import {
 } from '@/components/ui/shadcn/dialog';
 import { motion } from 'framer-motion';
 
-export default function ConfirmUnjoinDialog({ open, onClose, onConfirm }) {
+interface ConfirmUnjoinDialogProps {
+  open: boolean;
+  onClose: () => void;
+  onConfirm: () => void;
+}
+
+export default function ConfirmUnjoinDialog({
+  open,
+  onClose,
+  onConfirm,
+}: ConfirmUnjoinDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[380px] rounded-2xl p-0 overflow-hidden">

@@ -11,10 +11,15 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/shadcn/dialog';
-import { Label } from '@/components/ui/shadcn/label';
 import { Textarea } from '@/components/ui/shadcn/textarea';
 
-export default function JoinEventDialog({ open, onClose, onSubmit }) {
+interface JoinEventDialogProps {
+  open: boolean;
+  onClose: () => void;
+  onSubmit: (message: string) => void;
+}
+
+export default function JoinEventDialog({ open, onClose, onSubmit }: JoinEventDialogProps) {
   const [message, setMessage] = useState('');
 
   return (

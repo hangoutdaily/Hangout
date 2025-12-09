@@ -45,28 +45,10 @@ import { Instagram, Twitter, Facebook, Linkedin } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { getProfile, updateProfile } from '@/api/profile';
 import { getMyLikes, likeEvent, unlikeEvent } from '@/api/event';
+import { ApiError, HostedEvent } from '@/types';
 import { Field, FieldInput, FieldSelect, FieldTextarea } from '@/components/ui/FormField';
 import { Label } from '@/components/ui/shadcn/label';
 import EventCard from '@/components/ui/EventCard';
-
-interface HostedEvent {
-  id: number;
-  title: string;
-  description: string;
-  city: string;
-  addressLine: string;
-  datetime: string;
-  maxAttendees: number;
-  category: string;
-  priceType: 'FREE' | 'SPLIT_BILL';
-  host: {
-    name: string | null;
-    selfie: string | null;
-  };
-  _count: {
-    attendees: number;
-  };
-}
 
 interface ProfileData {
   id: number;
@@ -185,7 +167,14 @@ const SectionHeader = ({ title, subtitle }: { title: string; subtitle?: string }
   </div>
 );
 
-const ProfileInfoItem = ({ icon: Icon, label, value, children }: any) => (
+interface ProfileInfoItemProps {
+  icon: React.ElementType;
+  label: string;
+  value: string | null;
+  children?: React.ReactNode;
+}
+
+const ProfileInfoItem = ({ icon: Icon, label, value, children }: ProfileInfoItemProps) => (
   <div className="flex items-start gap-3 py-2">
     <Icon className="w-5 h-5 text-muted-foreground mt-1 shrink-0" />
     <div className="text-base w-full">
@@ -239,7 +228,7 @@ function HostedEventsGrid({
       <div className="py-10 text-center border-2 border-dashed border-border rounded-xl mt-8 p-8 bg-secondary/30">
         <Calendar className="w-10 h-10 text-muted-foreground mx-auto mb-4" />
         <h3 className="text-xl font-semibold text-foreground mb-2">
-          You haven't hosted any Hangouts yet.
+          You haven&apos;t hosted any Hangouts yet.
         </h3>
         <p className="text-muted-foreground mb-4">
           Ready to be a host? Share your passion with others and create your first hangout!
@@ -366,9 +355,10 @@ export default function ProfileScreen() {
         const likesRes = await getMyLikes();
         const likedIds = new Set<string>(likesRes.data.likedEventIds?.map(String) || []);
         setLikedEventIds(likedIds);
-      } catch (likesErr) {}
-    } catch (err: any) {
-      setError(err.response?.data?.error || 'Failed to load profile.');
+      } catch {}
+    } catch (err) {
+      const error = err as ApiError;
+      setError(error.response?.data?.error || 'Failed to load profile.');
     } finally {
       setLoading(false);
     }
@@ -390,7 +380,7 @@ export default function ProfileScreen() {
       } else {
         await likeEvent(eventId);
       }
-    } catch (error) {
+    } catch {
       setLikedEventIds((prev) => {
         const updated = new Set(prev);
         if (isCurrentlyLiked) updated.add(eventId);
@@ -466,23 +456,24 @@ export default function ProfileScreen() {
       await updateProfile(payload);
       setProfile(formData);
       setIsEditing(false);
-    } catch (err) {
+    } catch {
     } finally {
       setIsSaving(false);
     }
   };
 
-  const updateField = (field: keyof ProfileData, value: any) => {
+  const updateField = (field: keyof ProfileData, value: string | number | string[]) => {
     if (!formData) return;
-    setFormData((prev: any) => ({ ...prev, [field]: value }));
+    setFormData((prev) => (prev ? { ...prev, [field]: value } : null));
     if (formErrors[field]) {
       setFormErrors((prev) => ({ ...prev, [field]: '' }));
     }
   };
 
   const toggleList = (key: 'traits' | 'interests' | 'languages', item: string, limit?: number) => {
-    setFormData((prev: any) => {
-      const list = prev[key] || [];
+    setFormData((prev) => {
+      if (!prev) return null;
+      const list = (prev[key] as string[]) || [];
       const isSelected = list.includes(item);
       let newList;
 
@@ -1040,10 +1031,14 @@ export default function ProfileScreen() {
                 placeholder={placeholder}
                 value={formData.socialLinks?.[id] || ''}
                 onChange={(e) =>
-                  setFormData((prev: any) => ({
-                    ...prev,
-                    socialLinks: { ...prev.socialLinks, [id]: e.target.value },
-                  }))
+                  setFormData((prev) =>
+                    prev
+                      ? {
+                          ...prev,
+                          socialLinks: { ...prev.socialLinks, [id]: e.target.value },
+                        }
+                      : null
+                  )
                 }
               />
             </div>

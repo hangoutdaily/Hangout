@@ -11,6 +11,7 @@ import { cn } from '@/lib/utils';
 import { createEvent, getCategories } from '@/api/event';
 import { Input } from '@/components/ui/shadcn/input';
 import { DatePicker } from './components/DatePicker';
+import { ApiError } from '@/types';
 
 const LIBRARIES: ('places' | 'geometry')[] = ['places', 'geometry'];
 const DEFAULT_CENTER = { lat: 23.2156, lng: 72.6369 };
@@ -241,8 +242,9 @@ export default function CreateEventForm() {
 
       await createEvent(payload);
       router.push('/');
-    } catch (err: any) {
-      setGeneralError(err.response?.data?.error || 'Failed to create event. Please try again.');
+    } catch (err) {
+      const error = err as ApiError;
+      setGeneralError(error.response?.data?.error || 'Failed to create event. Please try again.');
       setIsLoading(false);
     }
   }
@@ -422,7 +424,14 @@ export default function CreateEventForm() {
   );
 }
 
-function Section({ icon: Icon, title, subtitle, children }: any) {
+interface SectionProps {
+  icon: React.ElementType;
+  title: string;
+  subtitle: string;
+  children: React.ReactNode;
+}
+
+function Section({ icon: Icon, title, subtitle, children }: SectionProps) {
   return (
     <motion.div
       initial={{ opacity: 0, y: 8 }}
@@ -446,7 +455,14 @@ function Section({ icon: Icon, title, subtitle, children }: any) {
   );
 }
 
-function PriceOption({ label, description, selected, onClick }: any) {
+interface PriceOptionProps {
+  label: string;
+  description: string;
+  selected: boolean;
+  onClick: () => void;
+}
+
+function PriceOption({ label, description, selected, onClick }: PriceOptionProps) {
   return (
     <button
       type="button"

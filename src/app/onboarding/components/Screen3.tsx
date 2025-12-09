@@ -5,10 +5,11 @@ import { Field, FieldInput, FieldSelect } from '@/components/ui/FormField';
 import { Label } from '@/components/ui/shadcn/label';
 import { Upload, Camera, Instagram, Twitter, Facebook, Linkedin } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { ProfileData } from '@/types';
 
 interface Screen3Props {
-  data: any;
-  onChange: (data: any) => void;
+  data: Partial<ProfileData>;
+  onChange: (data: Partial<ProfileData>) => void;
   errors?: Record<string, string>;
 }
 
@@ -33,14 +34,15 @@ export function Screen3({ data, onChange, errors = {} }: Screen3Props) {
     { id: 'linkedin', Icon: Linkedin, placeholder: 'Profile URL' },
   ];
 
-  const handleChange = (field: string, value: any) => onChange({ ...data, [field]: value });
+  const handleChange = (field: string, value: string | boolean | object) =>
+    onChange({ ...data, [field]: value });
 
   const toggleSocial = (id: string) => setActiveSocial((prev) => ({ ...prev, [id]: !prev[id] }));
 
   const handleSocialInput = (id: string, value: string) =>
     onChange({
       ...data,
-      socialLinks: { ...data.socialLinks, [id]: value },
+      socialLinks: { ...(data.socialLinks || {}), [id]: value },
     });
 
   return (
@@ -58,10 +60,10 @@ export function Screen3({ data, onChange, errors = {} }: Screen3Props) {
         <div className="space-y-4">
           <h3 className="text-lg font-medium text-foreground">Lifestyle</h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {['drinks', 'smoke', 'weed'].map((field) => (
+            {(['drinks', 'smoke', 'weed'] as const).map((field) => (
               <Field key={field} label={`Do you ${field}?`} error={errors[field]}>
                 <FieldSelect
-                  value={data[field]}
+                  value={(data[field] as string) || ''}
                   onChange={(v) => handleChange(field, v)}
                   options={lifestyleOptions}
                   placeholder="Select"

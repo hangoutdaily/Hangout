@@ -2,11 +2,12 @@
 
 import { createContext, useEffect, useState } from 'react';
 import { refresh, logout, checkAuth } from '@/api/auth';
+import { User } from '@/types';
 
 interface AuthContextType {
-  user: any;
+  user: User | null;
   loading: boolean;
-  setUser: (u: any) => void;
+  setUser: (u: User | null) => void;
   logoutUser: () => Promise<void>;
 }
 
@@ -17,8 +18,8 @@ export const AuthContext = createContext<AuthContextType>({
   logoutUser: async () => {},
 });
 
-export default function AuthProvider({ children }: any) {
-  const [user, setUser] = useState(null);
+export default function AuthProvider({ children }: { children: React.ReactNode }) {
+  const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {

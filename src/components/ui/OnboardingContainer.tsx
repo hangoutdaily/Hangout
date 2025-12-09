@@ -7,11 +7,12 @@ import { Screen3 } from '@/app/onboarding/components/Screen3';
 import { ProgressBar } from './ProgressBar';
 import { useRouter } from 'next/navigation';
 import { NavigationControls } from './NavigationControls';
+import { ProfileData } from '@/types';
 
 export function OnboardingContainer() {
   const [currentScreen, setCurrentScreen] = useState(0);
   const [hasAttemptedSubmit, setHasAttemptedSubmit] = useState(false);
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<Partial<ProfileData>>({
     // Screen 1
     name: '',
     age: '',
@@ -42,37 +43,40 @@ export function OnboardingContainer() {
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
   const router = useRouter();
 
-  const validateScreenRealtime = (screenIndex: number, data: any): Record<string, string> => {
+  const validateScreenRealtime = (
+    screenIndex: number,
+    data: Partial<ProfileData>
+  ): Record<string, string> => {
     const errors: Record<string, string> = {};
 
     if (screenIndex === 0) {
-      if (!data.name.trim()) errors.name = 'Full name is required';
+      if (!data.name?.trim()) errors.name = 'Full name is required';
       if (!data.age) errors.age = 'Age is required';
       if (!data.gender) errors.gender = 'Gender is required';
       if (!data.education) errors.education = 'Education is required';
-      if (!data.lifeEngagement.trim()) errors.lifeEngagement = 'This field is required';
-      if (!data.city.trim()) errors.city = 'Location is required';
-      if (data.languages.length === 0) errors.languages = 'Select at least one language';
+      if (!data.lifeEngagement?.trim()) errors.lifeEngagement = 'This field is required';
+      if (!data.city?.trim()) errors.city = 'Location is required';
+      if ((data.languages || []).length === 0) errors.languages = 'Select at least one language';
     } else if (screenIndex === 1) {
-      if (!data.bio.trim()) errors.bio = 'Bio is required';
-      if (!data.lookingFor.trim()) errors.lookingFor = "Tell us what you're looking for";
-      if (data.traits.length !== 3) errors.traits = 'Select exactly 3 traits';
-      if (data.interests.length < 3) errors.interests = 'Select at least 3 interests';
-      if (!data.topSongs.trim()) errors.topSongs = 'Share your favorite songs';
-      if (!data.topPlaces.trim()) errors.topPlaces = 'Share your favorite places';
-      if (!data.joyfulMoment.trim()) errors.joyfulMoment = 'Share your joyful moment';
+      if (!data.bio?.trim()) errors.bio = 'Bio is required';
+      if (!data.lookingFor?.trim()) errors.lookingFor = "Tell us what you're looking for";
+      if ((data.traits || []).length !== 3) errors.traits = 'Select exactly 3 traits';
+      if ((data.interests || []).length < 3) errors.interests = 'Select at least 3 interests';
+      if (!data.topSongs?.trim()) errors.topSongs = 'Share your favorite songs';
+      if (!data.topPlaces?.trim()) errors.topPlaces = 'Share your favorite places';
+      if (!data.joyfulMoment?.trim()) errors.joyfulMoment = 'Share your joyful moment';
     } else if (screenIndex === 2) {
       if (!data.drinks) errors.drinks = 'Please select an option';
       if (!data.smoke) errors.smoke = 'Please select an option';
       if (!data.weed) errors.weed = 'Please select an option';
-      if (data.photos.length < 3) errors.photos = 'Upload at least 3 photos';
+      if ((data.photos || []).length < 3) errors.photos = 'Upload at least 3 photos';
       if (!data.selfie) errors.selfie = 'Selfie verification is required';
     }
 
     return errors;
   };
 
-  const handleFormChange = (newData: any) => {
+  const handleFormChange = (newData: Partial<ProfileData>) => {
     setFormData(newData);
     // Re-validate on every change to clear errors if field becomes valid
     if (hasAttemptedSubmit) {
