@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation';
 import { useContext } from 'react';
 import { AuthContext } from '@/context/AuthContext';
 import Link from 'next/link';
+import { ApiError } from '@/types';
 
 interface PasswordStrength {
   score: number;
@@ -110,7 +111,7 @@ export default function SignupForm() {
     setIsLoading(true);
 
     try {
-      const payload: any = {
+      const payload: { password: string; email?: string; phone?: string } = {
         password: formData.password,
       };
 
@@ -126,8 +127,9 @@ export default function SignupForm() {
       setUser(res.data.authUser);
       localStorage.setItem('accessToken', res.data.accessToken);
       router.push('/onboarding');
-    } catch (error: any) {
-      const msg = error.response?.data?.error || 'Signup failed';
+    } catch (error) {
+      const err = error as ApiError;
+      const msg = err.response?.data?.error || 'Signup failed';
 
       setErrors({ email: msg });
     } finally {

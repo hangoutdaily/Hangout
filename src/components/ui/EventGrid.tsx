@@ -15,6 +15,7 @@ import { Skeleton } from './shadcn/skeleton';
 import { AuthContext } from '@/context/AuthContext';
 import JoinEventDialog from '../layout/JoinEventDialog';
 import ConfirmUnjoinDialog from '../layout/ConfirmUnjoinDialog';
+import { User } from '@/types';
 
 export function formatCategory(cat: string) {
   return cat
@@ -88,7 +89,7 @@ export default function EventGrid() {
     fetchData();
   }, [user]);
 
-  const isHostOfEvent = (user: any, hostId?: number | null) => {
+  const isHostOfEvent = (user: User | null, hostId?: number | null) => {
     if (!user || hostId == null) return false;
 
     const possibleIds = [user.profileId, user.id, user.profile?.id].filter((v) => v != null);
@@ -100,16 +101,28 @@ export default function EventGrid() {
     const currentlyLiked = likedEvents.has(eventId);
     setLikedEvents((prev) => {
       const updated = new Set(prev);
-      currentlyLiked ? updated.delete(eventId) : updated.add(eventId);
+      if (currentlyLiked) {
+        updated.delete(eventId);
+      } else {
+        updated.add(eventId);
+      }
       return updated;
     });
 
     try {
-      currentlyLiked ? await unlikeEvent(eventId) : await likeEvent(eventId);
+      if (currentlyLiked) {
+        await unlikeEvent(eventId);
+      } else {
+        await likeEvent(eventId);
+      }
     } catch {
       setLikedEvents((prev) => {
         const updated = new Set(prev);
-        currentlyLiked ? updated.add(eventId) : updated.delete(eventId);
+        if (currentlyLiked) {
+          updated.add(eventId);
+        } else {
+          updated.delete(eventId);
+        }
         return updated;
       });
     }

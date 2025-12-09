@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { login } from '@/api/auth';
 import { AuthContext } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
+import { ApiError } from '@/types';
 
 export default function LoginForm() {
   const [formData, setFormData] = useState({
@@ -58,7 +59,7 @@ export default function LoginForm() {
     setIsLoading(true);
 
     try {
-      const payload: any = {
+      const payload: { password: string; email?: string; phone?: string } = {
         password: formData.password,
       };
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -72,8 +73,9 @@ export default function LoginForm() {
       setUser(res.data.user);
       localStorage.setItem('accessToken', res.data.accessToken);
       router.replace('/');
-    } catch (err: any) {
-      const backendMsg = err.response?.data?.error || '';
+    } catch (err) {
+      const error = err as ApiError;
+      const backendMsg = error.response?.data?.error || '';
       let friendly = 'Login failed. Please try again.';
       if (backendMsg.includes('Invalid')) {
         friendly = 'Invalid email or password.';

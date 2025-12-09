@@ -21,10 +21,11 @@ import {
   Waves,
   Frame,
 } from 'lucide-react';
+import { ProfileData } from '@/types';
 
 interface Screen2Props {
-  data: any;
-  onChange: (data: any) => void;
+  data: Partial<ProfileData>;
+  onChange: (data: Partial<ProfileData>) => void;
   errors?: Record<string, string>;
 }
 
@@ -34,12 +35,13 @@ export function Screen2({ data, onChange, errors = {} }: Screen2Props) {
   };
 
   const handleToggle = (key: 'traits' | 'interests', item: string, limit: number) => {
-    const list = data[key].includes(item)
-      ? data[key].filter((t: string) => t !== item)
-      : data[key].length < limit
-        ? [...data[key], item]
-        : data[key];
-    handleChange(key, list);
+    const list = (data[key] || []) as string[];
+    const newList = list.includes(item)
+      ? list.filter((t: string) => t !== item)
+      : list.length < limit
+        ? [...list, item]
+        : list;
+    handleChange(key, newList);
   };
 
   const traits = [
@@ -121,7 +123,7 @@ export function Screen2({ data, onChange, errors = {} }: Screen2Props) {
                 onClick={() => handleToggle('traits', trait, 3)}
                 className={cn(
                   'px-4 py-3 rounded-lg text-sm font-medium border transition-all text-center',
-                  data.traits.includes(trait)
+                  (data.traits || []).includes(trait)
                     ? 'bg-foreground text-background border-foreground'
                     : 'bg-background border-border text-foreground hover:border-foreground'
                 )}
@@ -142,7 +144,7 @@ export function Screen2({ data, onChange, errors = {} }: Screen2Props) {
                 onClick={() => handleToggle('interests', name, 5)}
                 className={cn(
                   'px-4 py-3 rounded-lg text-sm font-medium border flex items-center gap-2 transition-all',
-                  data.interests.includes(name)
+                  (data.interests || []).includes(name)
                     ? 'bg-foreground text-background border-foreground'
                     : 'bg-background border-border text-foreground hover:border-foreground'
                 )}

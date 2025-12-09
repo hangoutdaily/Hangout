@@ -8,6 +8,7 @@ import { Skeleton } from './shadcn/skeleton';
 import { AuthContext } from '@/context/AuthContext';
 import Link from 'next/link';
 import { formatCategory } from './EventGrid';
+import { ApiError } from '@/types';
 
 type FetchedEvent = {
   id: number;
@@ -58,7 +59,7 @@ export default function WishlistGrid() {
               eventData._count = { attendees: eventData.attendees?.length ?? 0 };
             }
             return eventData as FetchedEvent;
-          } catch (e) {
+          } catch {
             return null;
           }
         });
@@ -68,8 +69,9 @@ export default function WishlistGrid() {
         );
 
         setEvents(fetchedEvents);
-      } catch (err: any) {
-        setError(err.response?.data?.error || 'Failed to load your wishlist.');
+      } catch (err) {
+        const error = err as ApiError;
+        setError(error.response?.data?.error || 'Failed to load your wishlist.');
       } finally {
         setLoading(false);
       }
@@ -83,7 +85,7 @@ export default function WishlistGrid() {
 
     try {
       await unlikeEvent(eventId);
-    } catch (error) {
+    } catch {
       if (eventToRevert) {
         setEvents((prev) => [...prev, eventToRevert].sort((a, b) => a.id - b.id));
       }

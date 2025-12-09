@@ -17,7 +17,6 @@ import {
   Facebook,
   Linkedin,
   Instagram,
-  Twitter,
   X as XIcon,
 } from 'lucide-react';
 import Image from 'next/image';
@@ -507,7 +506,7 @@ export default function EventDetailClient({ id }: EventDetailClientProps) {
             {isLoaded && event.geo && (
               <section className="space-y-4">
                 <h2 className="text-2xl font-medium tracking-tight text-foreground">
-                  Where we'll meet
+                  Where we&apos;ll meet
                 </h2>
                 <div className="w-full h-[300px] rounded-2xl overflow-hidden border border-border">
                   <GoogleMap
@@ -584,7 +583,7 @@ export default function EventDetailClient({ id }: EventDetailClientProps) {
               <section className="space-y-5">
                 <div className="flex items-center justify-between">
                   <h2 className="text-2xl font-medium tracking-tight text-foreground">
-                    Who's going
+                    Who&apos;s going
                   </h2>
                   <p className="text-sm text-muted-foreground font-medium">
                     {attendeesCount} / {event.maxAttendees} Joined
