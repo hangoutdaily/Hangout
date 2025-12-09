@@ -1,9 +1,10 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Calendar, MapPin, Tag, Wallet, CheckCircle2, Loader2 } from 'lucide-react';
+import { Calendar, MapPin, Tag, Wallet, CheckCircle2, Loader2, LocateFixed } from 'lucide-react';
+import { GoogleMap, Marker, useLoadScript } from '@react-google-maps/api';
 import { Field, FieldInput, FieldTextarea, FieldSelect } from '@/components/ui/FormField';
 import { Button } from '@/components/ui/shadcn/button';
 import { cn } from '@/lib/utils';
@@ -11,8 +12,21 @@ import { createEvent, getCategories } from '@/api/event';
 import { Input } from '@/components/ui/shadcn/input';
 import { DatePicker } from './components/DatePicker';
 
+const LIBRARIES: ('places' | 'geometry')[] = ['places', 'geometry'];
+const DEFAULT_CENTER = { lat: 23.2156, lng: 72.6369 };
+const MAP_CONTAINER_STYLE = {
+  width: '100%',
+  height: '300px',
+  borderRadius: '0.75rem',
+};
+
 type Category = string;
 type PriceType = 'FREE' | 'SPLIT_BILL';
+
+interface GeoLocation {
+  lat: number;
+  lng: number;
+}
 
 interface EventForm {
   title: string;
@@ -25,6 +39,7 @@ interface EventForm {
   time: string;
   maxAttendees: string;
   priceType: PriceType | '';
+  geo: GeoLocation | null;
 }
 
 function formatCategoryName(enumValue: string): string {
@@ -35,6 +50,12 @@ function formatCategoryName(enumValue: string): string {
 
 export default function CreateEventForm() {
   const router = useRouter();
+
+  const { isLoaded } = useLoadScript({
+    googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || '',
+    libraries: LIBRARIES,
+  });
+
   const [form, setForm] = useState<EventForm>({
     title: '',
     category: '',
@@ -46,6 +67,7 @@ export default function CreateEventForm() {
     time: '',
     maxAttendees: '',
     priceType: '',
+    geo: null,
   });
 
   const [categories, setCategories] = useState<string[]>([]);
@@ -54,6 +76,8 @@ export default function CreateEventForm() {
   const [submitted, setSubmitted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [generalError, setGeneralError] = useState<string | null>(null);
+
+  const [mapCenter, setMapCenter] = useState(DEFAULT_CENTER);
 
   useEffect(() => {
     async function fetchCategories() {
@@ -80,7 +104,78 @@ export default function CreateEventForm() {
     fetchCategories();
   }, []);
 
-  const requiredFields: (keyof EventForm)[] = Object.keys(form) as (keyof EventForm)[];
+  useEffect(() => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const userPos = {
+            lat: position.coords.latitude,
+            lng: position.coords.longitude,
+          };
+
+          setMapCenter(userPos);
+
+          setForm((prev) => {
+            if (!prev.city && !prev.addressLine && !prev.geo) {
+              return { ...prev, geo: userPos };
+            }
+            return prev;
+          });
+        },
+        (error) => {
+          console.error('Error getting user location:', error);
+        }
+      );
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!isLoaded) return;
+
+    if (!form.city && !form.addressLine) return;
+
+    const timeOutId = setTimeout(() => {
+      const fullAddress = `${form.addressLine}, ${form.city}, ${form.state}`;
+      const geocoder = new google.maps.Geocoder();
+
+      geocoder.geocode({ address: fullAddress }, (results, status) => {
+        if (status === 'OK' && results && results[0]) {
+          const location = results[0].geometry.location;
+          const newGeo = { lat: location.lat(), lng: location.lng() };
+
+          setMapCenter(newGeo);
+          setForm((prev) => ({ ...prev, geo: newGeo }));
+        }
+      });
+    }, 1000);
+
+    return () => clearTimeout(timeOutId);
+  }, [form.addressLine, form.city, form.state, isLoaded]);
+
+  const onMapClick = useCallback((e: google.maps.MapMouseEvent) => {
+    if (e.latLng) {
+      update('geo', { lat: e.latLng.lat(), lng: e.latLng.lng() });
+    }
+  }, []);
+
+  const onMarkerDragEnd = useCallback((e: google.maps.MapMouseEvent) => {
+    if (e.latLng) {
+      update('geo', { lat: e.latLng.lat(), lng: e.latLng.lng() });
+    }
+  }, []);
+
+  const requiredFields: (keyof EventForm)[] = [
+    'title',
+    'description',
+    'category',
+    'city',
+    'state',
+    'addressLine',
+    'date',
+    'time',
+    'maxAttendees',
+    'priceType',
+  ];
   const progress = Math.round(
     (requiredFields.filter((key) => !!form[key]).length / requiredFields.length) * 100
   );
@@ -141,6 +236,7 @@ export default function CreateEventForm() {
         datetime: datetime.toISOString(),
         maxAttendees: Number(form.maxAttendees),
         priceType: form.priceType,
+        geo: form.geo,
       };
 
       await createEvent(payload);
@@ -212,6 +308,40 @@ export default function CreateEventForm() {
             error={!!errors.addressLine}
           />
         </Field>
+
+        <div className="mt-4 border border-border rounded-xl overflow-hidden bg-secondary/20">
+          {!isLoaded ? (
+            <div className="h-[300px] flex items-center justify-center text-muted-foreground">
+              <Loader2 className="w-6 h-6 animate-spin mr-2" /> Loading Map...
+            </div>
+          ) : (
+            <GoogleMap
+              mapContainerStyle={MAP_CONTAINER_STYLE}
+              center={mapCenter}
+              zoom={14}
+              onClick={onMapClick}
+              options={{
+                streetViewControl: false,
+                mapTypeControl: false,
+              }}
+            >
+              {form.geo && (
+                <Marker
+                  position={form.geo}
+                  draggable={true}
+                  onDragEnd={onMarkerDragEnd}
+                  animation={google.maps.Animation.DROP}
+                />
+              )}
+            </GoogleMap>
+          )}
+          <div className="p-3 text-xs text-muted-foreground bg-secondary/50 flex items-center gap-2">
+            <LocateFixed className="w-4 h-4" />
+            <span>
+              Map auto-updates based on address. Click or drag the pin to refine precise location.
+            </span>
+          </div>
+        </div>
       </Section>
 
       <Section icon={Calendar} title="When & Capacity" subtitle="Choose schedule & attendees">

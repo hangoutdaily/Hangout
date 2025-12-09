@@ -7,13 +7,22 @@ import {
   Clock,
   Heart,
   ArrowLeft,
-  Star,
-  MessageCircle,
-  ChevronRight,
   Share2,
+  CheckCircle2,
+  ShieldCheck,
+  Loader2,
+  Sparkles,
+  Check,
+  Copy,
+  Facebook,
+  Linkedin,
+  Instagram,
+  Twitter,
+  X as XIcon,
 } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   cancelJoinEvent,
   getEvent,
@@ -22,20 +31,63 @@ import {
   joinEvent,
   likeEvent,
   unlikeEvent,
+  getEventJoinRequests,
+  approveJoinRequest,
+  rejectJoinRequest,
 } from '@/api/event';
 import { AuthContext } from '@/context/AuthContext';
 import ConfirmUnjoinDialog from '@/components/layout/ConfirmUnjoinDialog';
 import JoinEventDialog from '@/components/layout/JoinEventDialog';
 import { launchConfetti } from '@/lib/confetti';
+import { Button } from '@/components/ui/shadcn/button';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/shadcn/avatar';
+import { Badge } from '@/components/ui/shadcn/badge';
+import { cn } from '@/lib/utils';
+import { GoogleMap, Marker, useLoadScript } from '@react-google-maps/api';
+import { Separator } from '@/components/ui/shadcn/separator';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/shadcn/dialog';
+
+function WhatsAppIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="currentColor"
+      className={className}
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
+    </svg>
+  );
+}
+
+function RedditIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="currentColor"
+      className={className}
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <path d="M12 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0zm5.01 4.744c.688 0 1.25.561 1.25 1.249a1.25 1.25 0 0 1-2.498.056l-2.597-.547-.8 3.747c1.824.07 3.48.632 4.674 1.488.308-.309.73-.491 1.207-.491.968 0 1.754.786 1.754 1.754 0 .716-.435 1.333-1.01 1.614a3.111 3.111 0 0 1 .042.52c0 2.694-3.13 4.87-7.004 4.87-3.874 0-7.004-2.176-7.004-4.87 0-.183.015-.366.043-.534A1.748 1.748 0 0 1 4.028 12c0-.968.786-1.754 1.754-1.754.463 0 .898.196 1.207.49 1.207-.883 2.878-1.43 4.744-1.487l.885-4.182a.342.342 0 0 1 .14-.197.35.35 0 0 1 .238-.042l2.906.617a1.214 1.214 0 0 1 1.108-.701zM9.25 12C8.561 12 8 12.562 8 13.25c0 .687.561 1.248 1.25 1.248.687 0 1.248-.561 1.248-1.249 0-.688-.561-1.249-1.249-1.249zm5.5 0c-.687 0-1.248.561-1.248 1.25 0 .687.561 1.248 1.249 1.248.688 0 1.249-.561 1.249-1.249 0-.687-.562-1.249-1.25-1.249zm-5.466 3.99a.327.327 0 0 0-.231.094.33.33 0 0 0 0 .463c.842.842 2.484.913 2.961.913.477 0 2.105-.056 2.961-.913a.361.361 0 0 0 .029-.463.33.33 0 0 0-.464 0c-.547.533-1.684.73-2.512.73-.828 0-1.979-.196-2.512-.73a.326.326 0 0 0-.232-.095z" />
+    </svg>
+  );
+}
 
 interface EventDetailClientProps {
   id: string;
 }
 
-type EventHost = {
+interface GeoLocation {
+  lat: number;
+  lng: number;
+}
+
+type Attendee = {
   id: number;
-  name: string | null;
+  name: string;
   selfie: string | null;
+  age?: number;
+  gender?: string;
 };
 
 type EventDetail = {
@@ -48,16 +100,51 @@ type EventDetail = {
   maxAttendees: number;
   category: string;
   priceType: 'FREE' | 'SPLIT_BILL';
-  host: EventHost;
-  attendees: { id: number }[];
+  photos: string[];
+  geo?: GeoLocation;
+  host: {
+    id: number;
+    name: string | null;
+    selfie: string | null;
+    bio: string | null;
+  };
+  attendees: Attendee[];
 };
 
-const isHostOfEvent = (user: any, hostId?: number | null) => {
-  if (!user || hostId == null) return false;
+type JoinRequest = {
+  id: number;
+  message: string;
+  profile: {
+    id: number;
+    name: string;
+    selfie: string | null;
+  };
+};
 
-  const possibleIds = [user.profileId, user.id, user.profile?.id].filter((v) => v != null);
+const getCoverImage = (event: EventDetail) => {
+  if (event.photos && event.photos.length > 0) return event.photos[0];
+  // TODO: we will use catoon arts
+  const cat = event.category.toLowerCase();
+  if (cat.includes('coffee'))
+    return 'https://images.unsplash.com/photo-1509042239860-f550ce710b93?q=80&w=2574';
+  if (cat.includes('walk') || cat.includes('hike'))
+    return 'https://images.unsplash.com/photo-1551632811-561732d1e306?q=80&w=2670';
+  if (cat.includes('movie'))
+    return 'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?q=80&w=2670';
+  if (cat.includes('sport'))
+    return 'https://images.unsplash.com/photo-1461896836934-ffe607ba8211?q=80&w=2670';
+  if (cat.includes('night'))
+    return 'https://images.unsplash.com/photo-1514525253440-b393452e8d26?q=80&w=2574';
+  if (cat.includes('food') || cat.includes('dinner'))
+    return 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?q=80&w=2670';
+  return 'https://images.unsplash.com/photo-1551632811-561732d1e306?q=80&w=2670';
+};
 
-  return possibleIds.some((val) => Number(val) === Number(hostId));
+const formatCategory = (cat: string) => {
+  return cat
+    .split('_')
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
 };
 
 export default function EventDetailClient({ id }: EventDetailClientProps) {
@@ -67,34 +154,26 @@ export default function EventDetailClient({ id }: EventDetailClientProps) {
   const [isLiked, setIsLiked] = useState(false);
   const [showJoinDialog, setShowJoinDialog] = useState(false);
   const [showUnjoinDialog, setShowUnjoinDialog] = useState(false);
+
+  const [isShareOpen, setIsShareOpen] = useState(false);
+  const [isCopied, setIsCopied] = useState(false);
+
   const [requestStatus, setRequestStatus] = useState<'NONE' | 'REQUESTED' | 'JOINED' | 'REJECTED'>(
     'NONE'
   );
 
-  const attendeeMetadata = {
-    genderRatio: { male: 45, female: 55 },
-    ageRange: { min: 18, max: 45, avg: 28 },
+  const [joinRequests, setJoinRequests] = useState<JoinRequest[]>([]);
+  const [requestsLoading, setRequestsLoading] = useState(false);
+
+  const { isLoaded } = useLoadScript({
+    googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || '',
+  });
+
+  const MAP_CONTAINER_STYLE = {
+    width: '100%',
+    height: '100%',
+    borderRadius: '1rem',
   };
-
-  const mockReviews = [
-    {
-      id: '1',
-      user: 'Dhruv Chauhan',
-      rating: 5,
-      text: 'Amazing event! Sarah did an incredible job organizing everything. Highly recommend!',
-      date: '2 weeks ago',
-    },
-  ];
-
-  const mockChats = [
-    {
-      id: '1',
-      user: 'Dhruv Chauhan',
-      avatar: 'https://i.pravatar.cc/40?img=2',
-      message: "Can't wait for this concert! Is anyone meeting before?",
-      time: '2 hours ago',
-    },
-  ];
 
   useEffect(() => {
     async function load() {
@@ -109,21 +188,17 @@ export default function EventDetailClient({ id }: EventDetailClientProps) {
         setIsLiked(likesRes.data.likedEventIds?.includes(ev.id));
 
         const joinedRes = await getMyJoinedEvents();
-        const requested = joinedRes.data.requestedEventIds || [];
-        const confirmed = joinedRes.data.joinedEventIds || [];
+        const requestedIds = joinedRes.data.requestedEventIds || [];
+        const joinedIds = joinedRes.data.joinedEventIds || [];
 
-        const hostCheck = isHostOfEvent(user, ev.host?.id);
+        const isHost = user.profileId === ev.host.id;
 
-        // If current user is host → always JOINED, never unjoin
-        if (hostCheck) {
+        if (isHost) {
           setRequestStatus('JOINED');
-          return;
-        }
-
-        // your original logic
-        if (confirmed.includes(ev.id)) {
+          fetchJoinRequests(ev.id);
+        } else if (joinedIds.includes(ev.id)) {
           setRequestStatus('JOINED');
-        } else if (requested.includes(ev.id)) {
+        } else if (requestedIds.includes(ev.id)) {
           setRequestStatus('REQUESTED');
         } else {
           setRequestStatus('NONE');
@@ -135,372 +210,539 @@ export default function EventDetailClient({ id }: EventDetailClientProps) {
     load();
   }, [id, user]);
 
-  const handleToggleLike = async () => {
-    if (!user) {
-      window.location.href = '/login';
-      return;
+  const fetchJoinRequests = async (eventId: number) => {
+    setRequestsLoading(true);
+    try {
+      const res = await getEventJoinRequests(eventId);
+      setJoinRequests(res.data.requests);
+    } catch (e) {
+      console.error('Failed to load requests', e);
+    } finally {
+      setRequestsLoading(false);
     }
+  };
+
+  const handleHostAction = async (profileId: number, action: 'approve' | 'reject') => {
+    if (!event) return;
+    try {
+      if (action === 'approve') {
+        await approveJoinRequest(event.id, profileId);
+        launchConfetti();
+      } else {
+        await rejectJoinRequest(event.id, profileId);
+      }
+      setJoinRequests((prev) => prev.filter((r) => r.profile.id !== profileId));
+      if (action === 'approve') {
+        const res = await getEvent(id);
+        setEvent(res.data.event);
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const handleToggleLike = async () => {
     const next = !isLiked;
     setIsLiked(next);
     try {
-      if (next) {
-        await likeEvent(id);
-      } else {
-        await unlikeEvent(id);
-      }
+      next ? await likeEvent(id) : await unlikeEvent(id);
     } catch (err) {
-      console.error('Failed to toggle like', err);
       setIsLiked(!next);
     }
   };
 
-  if (loading) return <div className="p-6">Loading...</div>;
-  if (!event) return <div className="p-6 text-red-500">Event not found.</div>;
+  const copyLink = async () => {
+    try {
+      await navigator.clipboard.writeText(window.location.href);
+      setIsCopied(true);
+      setTimeout(() => setIsCopied(false), 2000);
+    } catch (err) {
+      console.error('Failed to copy', err);
+    }
+  };
 
+  const sharePlatforms = [
+    {
+      name: 'WhatsApp',
+      icon: <WhatsAppIcon className="w-6 h-6" />,
+      action: () => {
+        const url = `https://wa.me/?text=${encodeURIComponent(
+          `Check out this hangout: ${event?.title} ${window.location.href}`
+        )}`;
+        window.open(url, '_blank');
+      },
+    },
+    {
+      name: 'Instagram',
+      icon: <Instagram className="w-6 h-6" />,
+      action: () => {
+        copyLink();
+        const url = `https://www.instagram.com/direct/inbox/`;
+        window.open(url, '_blank');
+      },
+    },
+    {
+      name: 'Facebook',
+      icon: <Facebook className="w-6 h-6" />,
+      action: () => {
+        const url = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(
+          window.location.href
+        )}`;
+        window.open(url, '_blank');
+      },
+    },
+    {
+      name: 'X',
+      icon: <XIcon className="w-5 h-5" />,
+      action: () => {
+        const url = `https://twitter.com/intent/tweet?url=${encodeURIComponent(
+          window.location.href
+        )}&text=${encodeURIComponent(event?.title || 'Cool hangout!')}`;
+        window.open(url, '_blank');
+      },
+    },
+    {
+      name: 'LinkedIn',
+      icon: <Linkedin className="w-6 h-6" />,
+      action: () => {
+        const url = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(
+          window.location.href
+        )}`;
+        window.open(url, '_blank');
+      },
+    },
+    {
+      name: 'Reddit',
+      icon: <RedditIcon className="w-6 h-6" />,
+      action: () => {
+        const url = `https://reddit.com/submit?url=${encodeURIComponent(
+          window.location.href
+        )}&title=${encodeURIComponent(event?.title || '')}`;
+        window.open(url, '_blank');
+      },
+    },
+  ];
+
+  if (loading)
+    return (
+      <div className="h-screen w-full flex items-center justify-center bg-background">
+        <Loader2 className="animate-spin text-muted-foreground" />
+      </div>
+    );
+  if (!event) return <div className="p-10 text-center text-muted-foreground">Event not found.</div>;
+
+  const isHost = user?.profileId === event.host.id;
   const eventDate = new Date(event.datetime);
-  const formattedDate = eventDate.toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-  });
-  const formattedTime = eventDate.toLocaleTimeString('en-US', {
-    hour: 'numeric',
-    minute: '2-digit',
-  });
+  const attendeesCount = event.attendees.length;
+  const coverImage = getCoverImage(event);
 
-  const attendeesCount = event.attendees?.length ?? 0;
-  const isHost = isHostOfEvent(user, event.host?.id);
+  const ActionButton = () => (
+    <Button
+      size="lg"
+      className={cn(
+        'w-full font-medium text-base h-12 transition-all rounded-xl',
+        requestStatus === 'JOINED'
+          ? 'bg-green-600 hover:bg-green-700 text-white'
+          : requestStatus === 'REQUESTED'
+            ? 'bg-indigo-600 hover:bg-indigo-700 text-white'
+            : 'bg-foreground text-background hover:bg-foreground/90'
+      )}
+      disabled={isHost}
+      onClick={() => {
+        if (isHost) return;
+        if (requestStatus === 'JOINED' || requestStatus === 'REQUESTED') setShowUnjoinDialog(true);
+        else setShowJoinDialog(true);
+      }}
+    >
+      {isHost ? (
+        'You are Hosting'
+      ) : (
+        <>
+          {requestStatus === 'JOINED' && (
+            <>
+              <CheckCircle2 className="mr-2 h-5 w-5" /> Joined
+            </>
+          )}
+          {requestStatus === 'REQUESTED' && (
+            <>
+              <Clock className="mr-2 h-5 w-5" /> Requested
+            </>
+          )}
+          {requestStatus === 'NONE' && 'Join Hangout'}
+          {requestStatus === 'REJECTED' && 'Request Again'}
+        </>
+      )}
+    </Button>
+  );
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="sticky top-0 z-50 bg-background/95 backdrop-blur border-b border-border">
-        <div className="mx-auto max-w-7xl px-4 py-3 flex justify-between items-center">
+    <div className="min-h-screen bg-background pb-32">
+      <nav className="absolute top-14 md:top-16 left-0 right-0 z-50 h-16 px-4 lg:px-8 pointer-events-none">
+        <div className="max-w-4xl mx-auto w-full h-full flex items-center justify-between pointer-events-auto">
           <Link
             href="/"
-            className="flex items-center gap-2 text-foreground hover:text-muted transition-colors"
+            className="p-2 -ml-2 hover:bg-secondary rounded-full transition-colors text-foreground/80 hover:text-foreground"
           >
             <ArrowLeft className="h-5 w-5" />
-            <span className="text-sm font-medium">Back</span>
           </Link>
-
-          <div className="flex items-center gap-2">
-            <button>
-              <Share2 className="h-5 w-5 text-foreground" />
-            </button>
-            <button
+          <div className="flex gap-2">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="rounded-full hover:bg-secondary text-foreground/80 hover:text-foreground"
+              onClick={() => setIsShareOpen(true)}
+              title="Share Hangout"
+            >
+              <Share2 className="h-5 w-5" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="rounded-full hover:bg-secondary text-foreground/80 hover:text-foreground"
               onClick={handleToggleLike}
-              className="p-2.5 rounded-full hover:bg-secondary transition-colors"
             >
               <Heart
-                className={`h-5 w-5 ${
-                  isLiked ? 'fill-destructive text-destructive' : 'text-foreground'
-                }`}
+                className={cn(
+                  'h-5 w-5 transition-colors',
+                  isLiked ? 'fill-red-500 text-red-500' : ''
+                )}
               />
-            </button>
+            </Button>
+          </div>
+        </div>
+      </nav>
+
+      <div className="w-full h-[40vh] md:h-[50vh] relative bg-muted overflow-hidden">
+        <Image
+          src={coverImage}
+          alt={event.title}
+          fill
+          className="object-cover object-center transition-transform hover:scale-105 duration-700"
+          priority
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/20 to-transparent" />
+
+        <div className="absolute bottom-0 left-0 right-0 p-4 lg:p-8">
+          <div className="max-w-4xl mx-auto w-full">
+            <div className="flex flex-wrap gap-2 mb-3">
+              <Badge
+                variant="secondary"
+                className="bg-background/90 backdrop-blur-md text-foreground border-none font-medium px-3 py-1"
+              >
+                <Sparkles className="w-3 h-3 mr-1.5 text-yellow-500" />
+                {formatCategory(event.category)}
+              </Badge>
+            </div>
+            <h1 className="text-3xl md:text-5xl font-medium tracking-tight text-foreground drop-shadow-sm">
+              {event.title}
+            </h1>
           </div>
         </div>
       </div>
 
-      <div className="mx-auto max-w-4xl px-4 py-8">
-        <div className="mb-8">
-          <div className="flex items-start justify-between gap-4 mb-4">
-            <div>
-              <h1 className="text-4xl font-bold text-foreground mb-2">{event.title}</h1>
-              <p className="text-muted">{event.category}</p>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
-            <div className="flex items-start gap-3">
-              <Calendar className="h-5 w-5 text-muted flex-shrink-0 mt-0.5" />
-              <div>
-                <p className="text-xs uppercase tracking-wide text-muted font-medium">Date</p>
-                <p className="text-foreground">{formattedDate}</p>
-              </div>
-            </div>
-
-            <div className="flex items-start gap-3">
-              <Clock className="h-5 w-5 text-muted flex-shrink-0 mt-0.5" />
-              <div>
-                <p className="text-xs uppercase tracking-wide text-muted font-medium">Time</p>
-                <p className="text-foreground">{formattedTime}</p>
-              </div>
-            </div>
-
-            <div className="flex items-start gap-3">
-              <MapPin className="h-5 w-5 text-muted flex-shrink-0 mt-0.5" />
-              <div>
-                <p className="text-xs uppercase tracking-wide text-muted font-medium">Location</p>
-                <p className="text-foreground text-sm">{event.addressLine}</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2 pb-8 border-b border-border">
-            <div className="px-3 py-1 bg-secondary rounded-full">
-              <p className="text-sm font-medium text-foreground">
-                {event.priceType === 'SPLIT_BILL' ? 'Split the Bill' : 'Free'}
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <div className="mb-6 pb-8 border-b border-border">
-          <h3 className="text-lg font-semibold text-foreground mb-4">Things to know</h3>
-          <p className="text-foreground leading-relaxed mb-8">{event.description}</p>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="bg-secondary rounded-2xl p-6 flex flex-col">
-              <p className="text-xs uppercase tracking-wide text-muted font-medium mb-4">
-                People Joined
-              </p>
-              <div className="space-y-3">
-                <div className="flex items-baseline gap-2">
-                  <span className="text-4xl font-bold text-foreground">{attendeesCount}</span>
-                  <span className="text-lg text-muted">/ {event.maxAttendees}</span>
-                </div>
-                <div className="w-full bg-border rounded-full h-1.5">
-                  <div
-                    className="bg-foreground h-1.5 rounded-full"
-                    style={{
-                      width: `${Math.min(
-                        100,
-                        (attendeesCount / (event.maxAttendees || 1)) * 100
-                      )}%`,
-                    }}
-                  />
-                </div>
-                <p className="text-xs text-muted">
-                  {Math.round((attendeesCount / (event.maxAttendees || 1)) * 100)}% capacity
-                </p>
-              </div>
-            </div>
-
-            <div className="bg-secondary rounded-2xl p-6 flex flex-col">
-              <p className="text-xs uppercase tracking-wide text-muted font-medium mb-4">
-                Gender Mix
-              </p>
-              <div className="space-y-4 flex-1 flex flex-col justify-center">
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm font-medium text-foreground">Male</span>
-                    <span className="text-2xl font-bold text-foreground">
-                      {attendeeMetadata.genderRatio.male}%
-                    </span>
-                  </div>
-                  <div className="w-full bg-border rounded-full h-1 overflow-hidden">
-                    <div
-                      className="bg-foreground h-full"
-                      style={{ width: `${attendeeMetadata.genderRatio.male}%` }}
-                    />
-                  </div>
-                </div>
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm font-medium text-foreground">Female</span>
-                    <span className="text-2xl font-bold text-foreground">
-                      {attendeeMetadata.genderRatio.female}%
-                    </span>
-                  </div>
-                  <div className="w-full bg-border rounded-full h-1 overflow-hidden">
-                    <div
-                      className="bg-foreground h-full"
-                      style={{ width: `${attendeeMetadata.genderRatio.female}%` }}
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-secondary rounded-2xl p-6 flex flex-col justify-center">
-              <p className="text-xs uppercase tracking-wide text-muted font-medium mb-4">
-                Age Range
-              </p>
-              <div className="space-y-3">
-                <div>
-                  <p className="text-xs text-muted mb-1">Average</p>
-                  <p className="text-4xl font-bold text-foreground">
-                    {attendeeMetadata.ageRange.avg}
+      <div className="max-w-4xl mx-auto px-4 lg:px-8 mt-10">
+        <div className="space-y-12">
+          <div className="w-full space-y-12">
+            <section className="space-y-4">
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                <div className="bg-secondary/20 rounded-2xl p-4 border border-border flex items-center justify-start gap-3 h-auto hover:bg-secondary/40 transition-colors group">
+                  <Calendar className="h-5 w-5 text-foreground shrink-0" />
+                  <p className="text-lg font-medium tracking-tight text-foreground">
+                    {eventDate.toLocaleDateString('en-US', { day: 'numeric', month: 'short' })}
                   </p>
                 </div>
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted">{attendeeMetadata.ageRange.min}</span>
-                  <span className="text-muted">to</span>
-                  <span className="text-muted">{attendeeMetadata.ageRange.max}</span>
+
+                <div className="bg-secondary/20 rounded-2xl p-4 border border-border flex items-center justify-start gap-3 h-auto hover:bg-secondary/40 transition-colors group">
+                  <Clock className="h-5 w-5 text-foreground shrink-0" />
+                  <p className="text-lg font-medium tracking-tight text-foreground">
+                    {eventDate.toLocaleTimeString('en-US', {
+                      hour: 'numeric',
+                      minute: '2-digit',
+                      hour12: true,
+                    })}
+                  </p>
                 </div>
-              </div>
-            </div>
-          </div>
-        </div>
 
-        <div className="mb-6 pb-8 border-b border-border">
-          <h3 className="text-lg font-semibold text-foreground mb-6">Meet the host</h3>
-          <div className="bg-secondary rounded-2xl p-8 flex flex-col items-center text-center">
-            <Image
-              src={event.host.selfie || '/placeholder.svg'}
-              alt={event.host.name || 'Host'}
-              width={100}
-              height={100}
-              className="rounded-full mb-4 object-cover"
-            />
-            <h4 className="text-2xl font-bold text-foreground mb-1">
-              {event.host.name || 'Hangout Host'}
-            </h4>
-            <p className="text-sm text-muted font-medium mb-4">
-              Friendly local host who loves meeting new people and organizing great experiences.
-            </p>
-
-            <div className="flex items-center gap-4 mb-6 text-sm">
-              <div className="flex items-center gap-1">
-                <Star className="h-4 w-4 fill-foreground text-foreground" />
-                <span className="font-semibold text-foreground">4.9</span>
-                <span className="text-muted">(42 reviews)</span>
-              </div>
-            </div>
-
-            <p className="text-foreground leading-relaxed mb-6 max-w-xl text-sm">
-              I love hosting experiences that bring people together. Expect a chill vibe, good
-              conversations, and a safe, welcoming space for everyone.
-            </p>
-
-            <button className="px-6 py-2.5 border border-border rounded-lg hover:bg-background transition-colors text-sm font-medium text-foreground">
-              Contact Host
-            </button>
-          </div>
-        </div>
-
-        <div className="mb-6 pb-8 border-b border-border">
-          <div className="flex items-center justify-between mb-6">
-            <h3 className="text-lg font-semibold text-foreground">Host Reviews</h3>
-            <button className="text-sm font-medium text-foreground hover:text-muted transition-colors flex items-center gap-1">
-              View all
-              <ChevronRight className="h-4 w-4" />
-            </button>
-          </div>
-
-          <div className="flex gap-4 overflow-x-auto pb-2 snap-x scrollbar-hide">
-            {mockReviews.map((review) => (
-              <div
-                key={review.id}
-                className="flex-shrink-0 w-80 p-4 bg-secondary rounded-lg border border-border snap-start"
-              >
-                <div className="flex items-start justify-between mb-3">
-                  <p className="font-medium text-foreground text-sm">{review.user}</p>
-                  <div className="flex items-center gap-0.5">
-                    {Array(review.rating)
-                      .fill(null)
-                      .map((_, i) => (
-                        <Star key={i} className="h-3.5 w-3.5 fill-foreground text-foreground" />
-                      ))}
+                <div className="col-span-2 md:col-span-1 bg-secondary/20 rounded-2xl p-4 border border-border flex items-start gap-3 hover:bg-secondary/40 transition-colors">
+                  <MapPin className="h-5 w-5 text-foreground mt-0.5" />
+                  <div className="w-full">
+                    <p className="text-lg tracking-tight text-foreground leading-tight">
+                      {event.city}
+                    </p>
                   </div>
                 </div>
-                <p className="text-sm text-foreground mb-3 leading-relaxed">{review.text}</p>
-                <p className="text-xs text-muted">{review.date}</p>
               </div>
+            </section>
+
+            <div className="prose dark:prose-invert max-w-none">
+              <h2 className="text-2xl font-medium tracking-tight text-foreground mb-4">
+                About the hangout
+              </h2>
+              <p className="text-lg text-muted-foreground leading-relaxed whitespace-pre-wrap font-normal">
+                {event.description}
+              </p>
+
+              <div className="mt-3 pt-4 border-border/60">
+                <div className="flex w-full items-center justify-between">
+                  <div>
+                    <p className="text-sm text-muted-foreground font-medium mb-1 uppercase tracking-wide">
+                      Cost
+                    </p>
+                    <p className="text-3xl font-medium tracking-tight text-foreground">
+                      {event.priceType === 'FREE' ? 'Free' : 'Split Bill'}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground font-medium mb-1 uppercase tracking-wide text-right">
+                      Spots Left
+                    </p>
+                    <p className="text-3xl font-medium tracking-tight text-foreground text-right">
+                      {Math.max(0, event.maxAttendees - attendeesCount)}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {isLoaded && event.geo && (
+              <section className="space-y-4">
+                <h2 className="text-2xl font-medium tracking-tight text-foreground">
+                  Where we'll meet
+                </h2>
+                <div className="w-full h-[300px] rounded-2xl overflow-hidden border border-border">
+                  <GoogleMap
+                    mapContainerStyle={MAP_CONTAINER_STYLE}
+                    center={event.geo}
+                    zoom={15}
+                    options={{
+                      disableDefaultUI: true,
+                      zoomControl: true,
+                    }}
+                  >
+                    <Marker position={event.geo} />
+                  </GoogleMap>
+                </div>
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <MapPin className="w-4 h-4" />
+                  <span>
+                    {event.addressLine}, {event.city}
+                  </span>
+                  <a
+                    href={`https://www.google.com/maps/search/?api=1&query=${event.geo.lat},${event.geo.lng}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="ml-auto text-primary underline hover:no-underline font-medium"
+                  >
+                    Get Directions
+                  </a>
+                </div>
+              </section>
+            )}
+
+            <Separator className="bg-border/60" />
+
+            <section className="space-y-5">
+              <h2 className="text-2xl font-medium tracking-tight text-foreground">
+                Meet your host
+              </h2>
+
+              <div className="flex items-start gap-5 p-6 rounded-3xl border border-border bg-card/50 hover:bg-card hover:shadow-sm transition-all">
+                <div className="relative shrink-0">
+                  <Avatar className="h-20 w-20 border-2 border-background shadow-md">
+                    <AvatarImage src={event.host.selfie || ''} className="object-cover" />
+                    <AvatarFallback className="text-xl bg-muted text-muted-foreground">
+                      {event.host.name?.charAt(0) || 'H'}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 bg-foreground text-background text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">
+                    Host
+                  </div>
+                </div>
+
+                <div className="space-y-2 pt-1">
+                  <h3 className="text-lg font-semibold text-foreground">
+                    {event.host.name || 'Anonymous Host'}
+                  </h3>
+                  <p className="text-sm text-muted-foreground leading-relaxed">
+                    {event.host.bio
+                      ? event.host.bio
+                      : `Hi! I'm ${event.host.name}. I love creating spaces for people to connect and share good vibes. Can't wait to see you there!`}
+                  </p>
+                  <div className="flex gap-2 pt-1">
+                    <Badge
+                      variant="outline"
+                      className="text-xs font-normal text-muted-foreground rounded-full border-border/60 bg-transparent"
+                    >
+                      <ShieldCheck className="w-3 h-3 mr-1" /> Identity Verified
+                    </Badge>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            {event.attendees.length > 0 && (
+              <section className="space-y-5">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-2xl font-medium tracking-tight text-foreground">
+                    Who's going
+                  </h2>
+                  <p className="text-sm text-muted-foreground font-medium">
+                    {attendeesCount} / {event.maxAttendees} Joined
+                  </p>
+                </div>
+                <div className="flex flex-wrap gap-4">
+                  {event.attendees.map((attendee) => (
+                    <div
+                      key={attendee.id}
+                      className="group flex flex-col items-center gap-2 w-16 cursor-pointer"
+                    >
+                      <Avatar className="h-16 w-16 border-2 border-transparent group-hover:border-foreground transition-all">
+                        <AvatarImage src={attendee.selfie || ''} />
+                        <AvatarFallback>{attendee.name[0]}</AvatarFallback>
+                      </Avatar>
+                      <p className="text-xs text-muted-foreground group-hover:text-foreground transition-colors truncate w-full text-center">
+                        {attendee.name.split(' ')[0]}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {isHost && joinRequests.length > 0 && (
+              <section className="space-y-4 pt-4 border-t border-border/60">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-xl font-medium tracking-tight">Join Requests</h2>
+                  <Badge variant="destructive" className="rounded-full px-3">
+                    {joinRequests.length}
+                  </Badge>
+                </div>
+
+                <div className="grid gap-3">
+                  <AnimatePresence>
+                    {joinRequests.map((req) => (
+                      <motion.div
+                        key={req.id}
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: 'auto' }}
+                        exit={{ opacity: 0, height: 0 }}
+                        className="p-4 rounded-xl border border-border bg-card flex items-center justify-between gap-4"
+                      >
+                        <div className="flex items-center gap-3">
+                          <Avatar>
+                            <AvatarImage src={req.profile.selfie || ''} />
+                            <AvatarFallback>{req.profile.name[0]}</AvatarFallback>
+                          </Avatar>
+                          <div>
+                            <p className="font-medium text-sm">{req.profile.name}</p>
+                            <p className="text-xs text-muted-foreground line-clamp-1">
+                              {req.message}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex gap-2 shrink-0">
+                          <Button
+                            size="sm"
+                            className="h-8 px-3 rounded-lg"
+                            onClick={() => handleHostAction(req.profile.id, 'approve')}
+                          >
+                            Approve
+                          </Button>
+                        </div>
+                      </motion.div>
+                    ))}
+                  </AnimatePresence>
+                </div>
+              </section>
+            )}
+
+            <div className="flex justify-center pt-8 pb-12">
+              <div className="w-full">
+                <ActionButton />
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <Dialog open={isShareOpen} onOpenChange={setIsShareOpen}>
+        <DialogContent className="sm:max-w-md bg-background border-border">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-medium text-center">Share Hangout</DialogTitle>
+          </DialogHeader>
+
+          <div className="grid grid-cols-4 gap-y-6 py-6 px-2">
+            {sharePlatforms.map((platform) => (
+              <button
+                key={platform.name}
+                onClick={platform.action}
+                className="flex flex-col items-center gap-2 group"
+              >
+                <div
+                  className={cn(
+                    'w-12 h-12 flex items-center justify-center rounded-lg border border-border hover:border-accent hover:bg-accent/10 transition-all text-foreground'
+                  )}
+                >
+                  {platform.icon}
+                </div>
+                <span className="text-xs text-muted-foreground font-medium group-hover:text-foreground transition-colors">
+                  {platform.name}
+                </span>
+              </button>
             ))}
           </div>
-        </div>
 
-        {requestStatus === 'JOINED' && (
-          <div className="mb-12">
-            <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
-              <MessageCircle className="h-5 w-5" />
-              Event Chat
-            </h3>
-            <div className="space-y-4 mb-6 max-h-96 overflow-y-auto">
-              {mockChats.map((chat) => (
-                <div key={chat.id} className="flex items-start gap-3">
-                  <Image
-                    src={chat.avatar || '/placeholder.svg'}
-                    alt={chat.user}
-                    width={32}
-                    height={32}
-                    className="rounded-full flex-shrink-0"
-                  />
-                  <div className="flex-1">
-                    <div className="flex items-baseline gap-2 mb-1">
-                      <p className="font-medium text-foreground text-sm">{chat.user}</p>
-                      <p className="text-xs text-muted">{chat.time}</p>
-                    </div>
-                    <p className="text-sm text-foreground">{chat.message}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-            <div className="flex gap-2">
+          <div className="flex items-center space-x-2 p-1.5 rounded-xl border border-border bg-secondary/20 mt-2">
+            <div className="flex-1 min-w-0 pl-3">
+              <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-0.5 font-medium">
+                Hangout Link
+              </p>
               <input
-                type="text"
-                placeholder="Share your thoughts..."
-                className="flex-1 px-4 py-2 bg-secondary border border-border rounded-lg text-sm text-foreground placeholder:text-muted focus:outline-none focus:ring-1 focus:ring-accent"
+                readOnly
+                value={window.location.href}
+                className="w-full bg-transparent border-none text-sm p-0 focus:outline-none text-foreground truncate font-medium"
               />
-              <button className="px-4 py-2 bg-accent text-accent-foreground rounded-lg hover:opacity-90 transition-opacity font-medium text-sm">
-                Send
-              </button>
             </div>
+            <Button
+              size="sm"
+              onClick={copyLink}
+              className={cn(
+                'shrink-0 h-9 px-4 rounded-lg transition-all font-medium',
+                isCopied
+                  ? 'bg-green-600 hover:bg-green-700 text-white'
+                  : 'bg-foreground text-background hover:bg-foreground/90'
+              )}
+            >
+              {isCopied ? (
+                <Check className="w-4 h-4 mr-1.5" />
+              ) : (
+                <Copy className="w-4 h-4 mr-1.5" />
+              )}
+              {isCopied ? 'Copied' : 'Copy'}
+            </Button>
           </div>
-        )}
+        </DialogContent>
+      </Dialog>
 
-        <div className="flex pt-8 border-t border-border">
-          {isHost ? (
-            <button
-              disabled
-              className="flex-1 px-6 py-3 rounded-lg font-semibold bg-secondary text-muted-foreground cursor-default"
-            >
-              You are hosting this event
-            </button>
-          ) : (
-            <button
-              onClick={() => {
-                if (!user) {
-                  window.location.href = '/login';
-                  return;
-                }
-                if (requestStatus === 'JOINED' || requestStatus === 'REQUESTED') {
-                  setShowUnjoinDialog(true);
-                } else {
-                  setShowJoinDialog(true);
-                }
-              }}
-              className={`flex-1 px-6 py-3 rounded-lg font-semibold transition
-                ${
-                  requestStatus === 'JOINED'
-                    ? 'bg-green-100 text-green-700'
-                    : requestStatus === 'REQUESTED'
-                      ? 'bg-yellow-100 text-yellow-700'
-                      : 'bg-accent text-accent-foreground hover:opacity-90'
-                }
-              `}
-            >
-              {requestStatus === 'JOINED'
-                ? 'Joined'
-                : requestStatus === 'REQUESTED'
-                  ? 'Requested'
-                  : 'Request to Join'}
-            </button>
-          )}
-        </div>
-
-        <JoinEventDialog
-          open={showJoinDialog}
-          onClose={() => setShowJoinDialog(false)}
-          onSubmit={async (message) => {
-            await joinEvent(event.id, message);
-            setRequestStatus('REQUESTED');
-            setShowJoinDialog(false);
-            launchConfetti();
-          }}
-        />
-
-        <ConfirmUnjoinDialog
-          open={showUnjoinDialog}
-          onClose={() => setShowUnjoinDialog(false)}
-          onConfirm={async () => {
-            await cancelJoinEvent(event.id);
-            setRequestStatus('NONE');
-            setShowUnjoinDialog(false);
-          }}
-        />
-      </div>
+      <JoinEventDialog
+        open={showJoinDialog}
+        onClose={() => setShowJoinDialog(false)}
+        onSubmit={async (message: string) => {
+          await joinEvent(event.id, message);
+          setRequestStatus('REQUESTED');
+          setShowJoinDialog(false);
+          launchConfetti();
+        }}
+      />
+      <ConfirmUnjoinDialog
+        open={showUnjoinDialog}
+        onClose={() => setShowUnjoinDialog(false)}
+        onConfirm={async () => {
+          await cancelJoinEvent(event.id);
+          setRequestStatus('NONE');
+          setShowUnjoinDialog(false);
+        }}
+      />
     </div>
   );
 }
