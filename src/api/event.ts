@@ -14,3 +14,9 @@ export const joinEvent = (id: string | number, message: string) =>
   api.post(`/events/join/${id}`, { message });
 export const cancelJoinEvent = (id: string | number) => api.post(`/events/cancel/${id}`);
 export const getMyJoinedEvents = () => api.get('/events/joined/me');
+
+export const getEventJoinRequests = (id: string | number) => api.get(`/events/${id}/requests`);
+export const approveJoinRequest = (eventId: string | number, profileId: string | number) =>
+  api.post(`/events/${eventId}/requests/${profileId}/approve`);
+export const rejectJoinRequest = (eventId: string | number, profileId: string | number) =>
+  api.post(`/events/${eventId}/requests/${profileId}/reject`);
