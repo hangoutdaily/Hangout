@@ -9,4 +9,4 @@ export const login = (data: { email?: string; phone?: string; password: string }
 export const checkAuth = () => api.get('/auth/checkAuth');
 
 export const logout = () => api.post('/auth/logout');
-export const refresh = () => api.post('/auth/refresh');
+export const refresh = (refreshToken?: string) => api.post('/auth/refresh', { refreshToken });

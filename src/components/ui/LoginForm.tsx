@@ -72,6 +72,7 @@ export default function LoginForm() {
       const res = await login(payload);
       setUser(res.data.user);
       localStorage.setItem('accessToken', res.data.accessToken);
+      localStorage.setItem('refreshToken', res.data.refreshToken);
       router.replace('/');
     } catch (err) {
       const error = err as ApiError;
