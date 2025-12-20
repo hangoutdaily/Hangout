@@ -1,7 +1,7 @@
 'use client';
 
 import { createContext, useEffect, useState } from 'react';
-import { refresh, logout, checkAuth } from '@/api/auth';
+import { logout, checkAuth } from '@/api/auth';
 import { User } from '@/types';
 
 interface AuthContextType {
@@ -25,7 +25,7 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
   useEffect(() => {
     async function init() {
       try {
-        await refresh();
+        // We rely on the axios interceptor to handle token refresh if needed
         const res = await checkAuth();
         setUser(res.data.user);
       } catch {
@@ -43,6 +43,8 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
 
   const logoutUser = async () => {
     await logout();
+    localStorage.removeItem('accessToken');
+    localStorage.removeItem('refreshToken');
     setUser(null);
   };
 

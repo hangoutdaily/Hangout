@@ -126,6 +126,7 @@ export default function SignupForm() {
 
       setUser(res.data.authUser);
       localStorage.setItem('accessToken', res.data.accessToken);
+      localStorage.setItem('refreshToken', res.data.refreshToken);
       router.push('/onboarding');
     } catch (error) {
       const err = error as ApiError;
