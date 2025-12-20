@@ -8,6 +8,7 @@ import { ProgressBar } from './ProgressBar';
 import { useRouter } from 'next/navigation';
 import { NavigationControls } from './NavigationControls';
 import { ProfileData } from '@/types';
+import { createProfile } from '@/api/profile';
 
 export function OnboardingContainer() {
   const [currentScreen, setCurrentScreen] = useState(0);
@@ -112,13 +113,6 @@ export function OnboardingContainer() {
 
   const handleSubmit = async () => {
     try {
-      const accessToken = localStorage.getItem('accessToken');
-      console.log('accee token', accessToken);
-      if (!accessToken) {
-        console.error('No access token found');
-        return;
-      }
-
       // For now ignoring photos upload
       const payload = {
         ...formData,
@@ -127,28 +121,9 @@ export function OnboardingContainer() {
         interests: Array.from(formData.interests || []),
         languages: Array.from(formData.languages || []),
       };
-
-      const res = await fetch('http://localhost:8080/profile', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${accessToken}`,
-        },
-        body: JSON.stringify(payload),
-      });
-
-      if (!res.ok) {
-        const error = await res.json();
-        console.error('Profile creation failed:', error);
-        return;
-      }
-
-      const data = await res.json();
-      console.log('Profile created:', data);
+      await createProfile(payload);
       router.push('/');
-    } catch (err) {
-      console.error('Error submitting form:', err);
-    }
+    } catch (err) {}
   };
 
   const screens = [
