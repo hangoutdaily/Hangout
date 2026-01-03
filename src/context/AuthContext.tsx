@@ -42,10 +42,10 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
   }
 
   const logoutUser = async () => {
-    await logout();
     localStorage.removeItem('accessToken');
     localStorage.removeItem('refreshToken');
     setUser(null);
+    await logout();
   };
 
   return (
