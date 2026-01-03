@@ -1,6 +1,6 @@
 'use client';
 
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useState, useRef, useEffect, useContext } from 'react';
 import Link from 'next/link';
 import { MapPin, Bell, Home, Users, MessageCircle, Heart, PlusSquare, Search } from 'lucide-react';
@@ -39,6 +39,7 @@ export default function Header() {
     { href: '/chats', label: 'Chats', icon: MessageCircle },
     { href: '/profile', label: 'Profile', icon: Users },
   ];
+  const router = useRouter();
 
   return (
     <header className="sticky top-0 z-50 w-full bg-background">
@@ -147,10 +148,10 @@ export default function Header() {
                     Settings
                   </button>
                   <button
-                    onClick={() => {
-                      logoutUser();
+                    onClick={async () => {
+                      await logoutUser();
                       setIsProfileOpen(false);
-                      window.location.href = '/';
+                      router.push('/');
                     }}
                     className="block w-full text-left px-3 py-2 text-sm text-destructive hover:bg-accent/10 rounded-md transition"
                   >
