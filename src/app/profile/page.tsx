@@ -47,6 +47,8 @@ import { getProfile, updateProfile } from '@/api/profile';
 import { getMyLikes, likeEvent, unlikeEvent } from '@/api/event';
 import { ApiError, HostedEvent } from '@/types';
 import { Field, FieldInput, FieldSelect, FieldTextarea } from '@/components/ui/FormField';
+import { AuthContext } from '@/context/AuthContext';
+import { useContext } from 'react';
 import { Label } from '@/components/ui/shadcn/label';
 import EventCard from '@/components/ui/EventCard';
 
@@ -328,7 +330,26 @@ function ReviewsSection({ reviews }: { reviews: typeof DUMMY_REVIEWS }) {
   );
 }
 
+const UnauthenticatedProfile = () => (
+  <div className="flex flex-col items-center justify-center min-h-[60vh] px-4 text-center space-y-4">
+    <div className="w-16 h-16 bg-secondary/30 rounded-full flex items-center justify-center mb-4">
+      <User className="w-8 h-8 text-muted-foreground" />
+    </div>
+    <h2 className="text-2xl font-bold tracking-tight">Strangers need profiles too</h2>
+    <p className="text-muted-foreground max-w-sm mx-auto">
+      Sign in to create your profile, host hangouts, and turn awkward hellos into real
+      conversations.
+    </p>
+    <Link href="/login" passHref legacyBehavior>
+      <Button size="lg" className="mt-4 font-semibold px-8">
+        Sign In
+      </Button>
+    </Link>
+  </div>
+);
+
 export default function ProfileScreen() {
+  const { user } = useContext(AuthContext);
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -341,8 +362,12 @@ export default function ProfileScreen() {
   const [likedEventIds, setLikedEventIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
-    fetchProfile();
-  }, []);
+    if (user) {
+      fetchProfile();
+    } else {
+      setLoading(false);
+    }
+  }, [user]);
 
   async function fetchProfile() {
     try {
@@ -495,6 +520,14 @@ export default function ProfileScreen() {
 
   if (loading) return <ProfileScreenSkeleton />;
 
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-background pt-10">
+        <UnauthenticatedProfile />
+      </div>
+    );
+  }
+
   if (error || !profile) {
     return (
       <div className="max-w-3xl mx-auto px-4 py-20 text-center">
@@ -520,7 +553,7 @@ export default function ProfileScreen() {
     return (
       <div className="min-h-screen bg-background">
         <div className="space-y-16 max-w-3xl mx-auto px-4 py-10 relative">
-          <div className="absolute top-10 right-4 z-10">
+          <div className="absolute top-10 right-4 z-10 flex gap-2">
             <Button
               variant="outline"
               size="sm"
