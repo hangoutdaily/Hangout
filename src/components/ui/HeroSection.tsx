@@ -1,10 +1,10 @@
-"use client";
+'use client';
 
-import { Search, MapPin, Calendar } from "lucide-react";
-import { useState } from "react";
+import { Search, MapPin, Calendar } from 'lucide-react';
+import { useState } from 'react';
 
 export default function HeroSection() {
-  const [searchQuery, setSearchQuery] = useState("");
+  const [searchQuery, setSearchQuery] = useState('');
 
   return (
     <div className="relative bg-gradient-to-br from-foreground/5 via-background to-foreground/5 py-12 md:py-20">
@@ -15,8 +15,8 @@ export default function HeroSection() {
             <span className="block text-foreground/80">Hangouts Near You</span>
           </h1>
           <p className="text-lg text-muted max-w-2xl mx-auto">
-            Connect with like-minded people and create unforgettable memories. 
-            Join events, host your own, and make every moment count.
+            Connect with like-minded people and create unforgettable memories. Join hangouts, host
+            your own, and make every moment count.
           </p>
         </div>
 
@@ -25,13 +25,13 @@ export default function HeroSection() {
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted" />
             <input
               type="text"
-              placeholder="Search for events, activities, or places..."
+              placeholder="Search for hangouts, activities, or places..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full rounded-xl border border-border bg-input pl-12 pr-4 py-4 text-foreground placeholder-muted focus:outline-none focus:ring-2 focus:ring-ring focus:border-accent transition-all"
             />
           </div>
-          
+
           <div className="flex flex-col sm:flex-row gap-3 mt-4">
             <div className="relative flex-1">
               <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted" />

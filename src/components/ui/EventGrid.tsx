@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useContext } from 'react';
+import { useSearchParams } from 'next/navigation';
 import EventCard from './EventCard';
 import {
   getAllEvents,
@@ -54,11 +55,18 @@ export default function EventGrid() {
   const [joinDialogFor, setJoinDialogFor] = useState<number | null>(null);
   const [unjoinDialogFor, setUnjoinDialogFor] = useState<number | null>(null);
   const { user } = useContext(AuthContext);
+  const searchParams = useSearchParams();
 
   useEffect(() => {
     async function fetchData() {
+      setLoading(true);
       try {
-        const eventsRes = await getAllEvents();
+        const search = searchParams.get('search') || undefined;
+        const category = searchParams.get('category') || undefined;
+        const time = searchParams.get('time') || undefined;
+        const date = searchParams.get('date') || undefined;
+
+        const eventsRes = await getAllEvents({ search, category, time, date });
         setEvents(eventsRes.data.events);
 
         if (user) {
@@ -87,7 +95,7 @@ export default function EventGrid() {
       }
     }
     fetchData();
-  }, [user]);
+  }, [user, searchParams]);
 
   const isHostOfEvent = (user: User | null, hostId?: number | null) => {
     if (!user || hostId == null) return false;
@@ -143,7 +151,7 @@ export default function EventGrid() {
   if (events.length === 0) {
     return (
       <div className="mx-auto max-w-7xl px-4 text-center text-muted-foreground">
-        No events found.
+        No hangouts found.
       </div>
     );
   }
