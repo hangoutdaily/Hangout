@@ -162,6 +162,20 @@ export default function Header() {
               <input
                 type="text"
                 placeholder="Search Hangouts..."
+                defaultValue={
+                  new URLSearchParams(
+                    typeof window !== 'undefined' ? window.location.search : ''
+                  ).get('search') || ''
+                }
+                onChange={(e) => {
+                  const params = new URLSearchParams(window.location.search);
+                  if (e.target.value) {
+                    params.set('search', e.target.value);
+                  } else {
+                    params.delete('search');
+                  }
+                  router.replace(`/?${params.toString()}`);
+                }}
                 className="w-full rounded-lg border border-border bg-surface pl-10 pr-4 py-1.5 text-foreground placeholder:text-muted-foreground transition-all"
               />
             </div>
@@ -257,6 +271,20 @@ export default function Header() {
             <input
               type="text"
               placeholder="Search Hangouts..."
+              defaultValue={
+                new URLSearchParams(
+                  typeof window !== 'undefined' ? window.location.search : ''
+                ).get('search') || ''
+              }
+              onChange={(e) => {
+                const params = new URLSearchParams(window.location.search);
+                if (e.target.value) {
+                  params.set('search', e.target.value);
+                } else {
+                  params.delete('search');
+                }
+                router.replace(`/?${params.toString()}`);
+              }}
               className="w-full rounded-xl border border-border bg-surface pl-10 pr-3 py-3 text-foreground placeholder:text-muted-foreground focus:outline-none transition-all"
             />
           </div>

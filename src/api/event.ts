@@ -2,7 +2,12 @@ import api from './axios';
 import { CreateEventPayload } from '@/types';
 
 export const createEvent = (data: CreateEventPayload) => api.post('/events', data);
-export const getAllEvents = () => api.get('/events');
+export const getAllEvents = (params?: {
+  search?: string;
+  category?: string;
+  time?: string;
+  date?: string;
+}) => api.get('/events', { params });
 export const getEvent = (id: string) => api.get(`/events/${id}`);
 export const getCategories = () => api.get('/events/categories');
 
