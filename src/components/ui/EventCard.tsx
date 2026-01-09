@@ -51,7 +51,7 @@ export default function EventCard({
   return (
     <Link
       href={`/events/${id}`}
-      className="block rounded-xl overflow-hidden border border-border bg-card hover:shadow-md hover:border-accent/30 transition-all duration-300"
+      className="flex flex-col h-full rounded-xl overflow-hidden border border-border bg-card hover:shadow-md hover:border-accent/30 transition-all duration-300"
     >
       <div className="px-5 pt-4 pb-3 flex items-center justify-between">
         <div className="flex items-center gap-4 text-sm text-muted flex-1">
@@ -91,7 +91,7 @@ export default function EventCard({
         <p className="text-muted text-sm line-clamp-2 leading-relaxed">{description}</p>
       </div>
 
-      <div className="px-5 py-3 space-y-2.5">
+      <div className="px-5 py-3 space-y-2.5 flex-1">
         <div className="flex items-center gap-3 text-sm">
           <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-gray-100">
             <MapPin className="h-4 w-4 text-gray-700" />

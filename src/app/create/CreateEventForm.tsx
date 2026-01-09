@@ -9,8 +9,8 @@ import { Field, FieldInput, FieldTextarea, FieldSelect } from '@/components/ui/F
 import { Button } from '@/components/ui/shadcn/button';
 import { cn } from '@/lib/utils';
 import { createEvent, getCategories } from '@/api/event';
-import { Input } from '@/components/ui/shadcn/input';
 import { DatePicker } from './components/DatePicker';
+import { TimePicker } from './components/TimePicker';
 import { ApiError } from '@/types';
 
 const LIBRARIES: ('places' | 'geometry')[] = ['places', 'geometry'];
@@ -252,7 +252,7 @@ export default function CreateEventForm() {
   return (
     <form onSubmit={handleSubmit} className="space-y-8">
       {generalError && <p className="text-sm text-destructive">{generalError}</p>}
-      <Section icon={Tag} title="Basic Information" subtitle="About your event">
+      <Section icon={Tag} title="What’s the Plan?" subtitle="Set the vibe people sign up for">
         <Field label="Title" error={errors.title}>
           <FieldInput
             placeholder="e.g., Sunday Brunch & Gossip"
@@ -282,7 +282,11 @@ export default function CreateEventForm() {
         </Field>
       </Section>
 
-      <Section icon={MapPin} title="Location Details" subtitle="Where is it happening?">
+      <Section
+        icon={MapPin}
+        title="Where Are We Meeting?"
+        subtitle="Help people find the exact spot"
+      >
         <div className="grid sm:grid-cols-2 gap-4">
           <Field label="City" error={errors.city}>
             <FieldInput
@@ -346,7 +350,11 @@ export default function CreateEventForm() {
         </div>
       </Section>
 
-      <Section icon={Calendar} title="When & Capacity" subtitle="Choose schedule & attendees">
+      <Section
+        icon={Calendar}
+        title="When & Capacity"
+        subtitle="Pick the date, time, and group size"
+      >
         <div className="grid sm:grid-cols-2 gap-4">
           <Field label="Date" error={errors.date}>
             <DatePicker
@@ -357,14 +365,10 @@ export default function CreateEventForm() {
           </Field>
 
           <Field label="Time" error={errors.time}>
-            <Input
-              type="time"
+            <TimePicker
               value={form.time}
-              onChange={(e) => update('time', e.target.value)}
-              className={cn(
-                !!errors.time && 'border-destructive focus-visible:ring-destructive',
-                '[&::-webkit-calendar-picker-indicator]:hidden [&::-webkit-calendar-picker-indicator]:appearance-none'
-              )}
+              onChange={(val) => update('time', val)}
+              error={!!errors.time}
             />
           </Field>
         </div>
@@ -381,7 +385,7 @@ export default function CreateEventForm() {
         </Field>
       </Section>
 
-      <Section icon={Wallet} title="Pricing" subtitle="Decide how attendees will pay">
+      <Section icon={Wallet} title="Who’s Paying?" subtitle="Free hangout or split the bill">
         <div className="grid sm:grid-cols-2 gap-3">
           <PriceOption
             label="Free"
