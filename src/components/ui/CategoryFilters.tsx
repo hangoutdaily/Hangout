@@ -164,7 +164,7 @@ export default function CategoryFilters() {
           className={`flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium whitespace-nowrap border transition-all
               ${
                 currentCategory
-                  ? 'bg-black text-background border-transparent'
+                  ? 'bg-primary text-primary-foreground border-transparent'
                   : 'bg-surface text-foreground hover:bg-accent/10 border-transparent'
               }`}
         >
@@ -189,7 +189,7 @@ export default function CategoryFilters() {
           className={`flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium whitespace-nowrap border transition-all
               ${
                 currentDate
-                  ? 'bg-black text-background border-transparent'
+                  ? 'bg-primary text-primary-foreground border-transparent'
                   : 'bg-surface text-foreground hover:bg-accent/10 border-transparent'
               }`}
         >
@@ -209,7 +209,7 @@ export default function CategoryFilters() {
           className={`flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium whitespace-nowrap border transition-all
               ${
                 currentTime
-                  ? 'bg-black text-background border-transparent'
+                  ? 'bg-primary text-primary-foreground border-transparent'
                   : 'bg-surface text-foreground hover:bg-accent/10 border-transparent'
               }`}
         >
