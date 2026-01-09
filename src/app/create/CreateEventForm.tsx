@@ -244,7 +244,7 @@ export default function CreateEventForm() {
       router.push('/');
     } catch (err) {
       const error = err as ApiError;
-      setGeneralError(error.response?.data?.error || 'Failed to create event. Please try again.');
+      setGeneralError(error.response?.data?.error || 'Failed to create hangout. Please try again.');
       setIsLoading(false);
     }
   }
@@ -417,7 +417,7 @@ export default function CreateEventForm() {
         </AnimatePresence>
         <Button type="submit" className="font-semibold w-full sm:w-auto" disabled={isLoading}>
           {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-          {isLoading ? 'Creating...' : 'Create Event'}
+          {isLoading ? 'Creating...' : 'Create Hangout'}
         </Button>
       </motion.div>
     </form>
