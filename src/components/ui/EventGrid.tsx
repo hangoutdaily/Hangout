@@ -17,6 +17,7 @@ import { AuthContext } from '@/context/AuthContext';
 import JoinEventDialog from '../layout/JoinEventDialog';
 import ConfirmUnjoinDialog from '../layout/ConfirmUnjoinDialog';
 import { User } from '@/types';
+import { isHostOfEvent } from '@/lib/utils';
 
 export function formatCategory(cat: string) {
   return cat
@@ -96,14 +97,6 @@ export default function EventGrid() {
     }
     fetchData();
   }, [user, searchParams]);
-
-  const isHostOfEvent = (user: User | null, hostId?: number | null) => {
-    if (!user || hostId == null) return false;
-
-    const possibleIds = [user.profileId, user.id, user.profile?.id].filter((v) => v != null);
-
-    return possibleIds.some((val) => Number(val) === Number(hostId));
-  };
 
   const handleLike = async (eventId: string) => {
     const currentlyLiked = likedEvents.has(eventId);

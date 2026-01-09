@@ -3,12 +3,22 @@
 import { useState, useEffect, useContext } from 'react';
 import { Heart, AlertTriangle } from 'lucide-react';
 import EventCard from './EventCard';
-import { getEvent, getMyLikes, unlikeEvent } from '@/api/event';
+import {
+  getEvent,
+  getMyLikes,
+  unlikeEvent,
+  getMyJoinedEvents,
+  joinEvent,
+  cancelJoinEvent,
+} from '@/api/event';
 import { Skeleton } from './shadcn/skeleton';
 import { AuthContext } from '@/context/AuthContext';
 import Link from 'next/link';
 import { formatCategory } from './EventGrid';
 import { ApiError } from '@/types';
+import JoinEventDialog from '../layout/JoinEventDialog';
+import ConfirmUnjoinDialog from '../layout/ConfirmUnjoinDialog';
+import { isHostOfEvent } from '@/lib/utils';
 
 type FetchedEvent = {
   id: number;
@@ -23,6 +33,7 @@ type FetchedEvent = {
   host: {
     name: string | null;
     selfie: string | null;
+    id: number;
   };
   _count: {
     attendees: number;
@@ -34,6 +45,11 @@ export default function WishlistGrid() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { user } = useContext(AuthContext);
+  const [joinStatus, setJoinStatus] = useState<
+    Record<string, 'NONE' | 'REQUESTED' | 'JOINED' | 'REJECTED'>
+  >({});
+  const [joinDialogFor, setJoinDialogFor] = useState<number | null>(null);
+  const [unjoinDialogFor, setUnjoinDialogFor] = useState<number | null>(null);
 
   useEffect(() => {
     async function fetchData() {
@@ -69,6 +85,24 @@ export default function WishlistGrid() {
         );
 
         setEvents(fetchedEvents);
+
+        if (user) {
+          try {
+            const joinedReq = await getMyJoinedEvents();
+            const statusMap: Record<string, 'NONE' | 'REQUESTED' | 'JOINED'> = {};
+
+            joinedReq.data?.requestedEventIds?.forEach((id: number) => {
+              statusMap[String(id)] = 'REQUESTED';
+            });
+
+            joinedReq.data?.joinedEventIds?.forEach((id: number) => {
+              statusMap[String(id)] = 'JOINED';
+            });
+            setJoinStatus(statusMap);
+          } catch (e) {
+            console.error('Failed to fetch joined status', e);
+          }
+        }
       } catch (err) {
         const error = err as ApiError;
         setError(error.response?.data?.error || 'Failed to load your wishlist.');
@@ -152,6 +186,27 @@ export default function WishlistGrid() {
 
   return (
     <div className="mx-auto max-w-7xl px-4">
+      <JoinEventDialog
+        open={joinDialogFor !== null}
+        onClose={() => setJoinDialogFor(null)}
+        onSubmit={async (message) => {
+          const id = joinDialogFor!;
+          await joinEvent(id, message);
+          setJoinStatus((prev) => ({ ...prev, [String(id)]: 'REQUESTED' }));
+          setJoinDialogFor(null);
+        }}
+      />
+
+      <ConfirmUnjoinDialog
+        open={unjoinDialogFor !== null}
+        onClose={() => setUnjoinDialogFor(null)}
+        onConfirm={async () => {
+          const id = unjoinDialogFor!;
+          await cancelJoinEvent(id);
+          setJoinStatus((prev) => ({ ...prev, [String(id)]: 'NONE' }));
+          setUnjoinDialogFor(null);
+        }}
+      />
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {events.map((event) => {
           const eventProps = {
@@ -177,13 +232,24 @@ export default function WishlistGrid() {
             },
           };
 
+          const idStr = event.id.toString();
+          let status = joinStatus[idStr] || 'NONE';
+          const isHost = isHostOfEvent(user, event.host?.id);
+          if (isHost) status = 'JOINED';
+
           return (
             <EventCard
               key={event.id}
               {...eventProps}
               isLiked={true}
+              status={status}
               onLike={() => handleUnlike(eventProps.id)}
-              onJoin={() => console.log(`Joining event ${eventProps.id}`)}
+              onJoin={() => {
+                if (!user) return (window.location.href = '/login');
+                if (isHost) return;
+                if (status === 'NONE' || status === 'REJECTED') setJoinDialogFor(event.id);
+                else setUnjoinDialogFor(event.id);
+              }}
             />
           );
         })}

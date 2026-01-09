@@ -1,6 +1,14 @@
-import { clsx, type ClassValue } from "clsx"
-import { twMerge } from "tailwind-merge"
+import { clsx, type ClassValue } from 'clsx';
+import { twMerge } from 'tailwind-merge';
 
 export function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs))
+  return twMerge(clsx(inputs));
 }
+
+export const isHostOfEvent = (user: any, hostId?: number | null) => {
+  if (!user || hostId == null) return false;
+
+  const possibleIds = [user.profileId, user.id, user.profile?.id].filter((v) => v != null);
+
+  return possibleIds.some((val) => Number(val) === Number(hostId));
+};

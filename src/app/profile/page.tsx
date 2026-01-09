@@ -273,6 +273,7 @@ function HostedEventsGrid({
             key={event.id}
             {...eventProps}
             isLiked={likedEventIds.has(eventProps.id)}
+            status="JOINED"
             onLike={() => onLike(eventProps.id)}
             onJoin={() => console.log('Cannot join own event')}
           />
