@@ -633,24 +633,32 @@ export default function EventDetailClient({ id }: EventDetailClientProps) {
                         initial={{ opacity: 0, height: 0 }}
                         animate={{ opacity: 1, height: 'auto' }}
                         exit={{ opacity: 0, height: 0 }}
-                        className="p-4 rounded-xl border border-border bg-card flex items-center justify-between gap-4"
+                        className="p-4 rounded-xl border border-border bg-card flex flex-col sm:flex-row sm:items-start justify-between gap-4"
                       >
-                        <div className="flex items-center gap-3">
-                          <Avatar>
+                        <div className="flex items-start gap-3 w-full">
+                          <Avatar className="shrink-0">
                             <AvatarImage src={req.profile.selfie || ''} />
                             <AvatarFallback>{req.profile.name[0]}</AvatarFallback>
                           </Avatar>
-                          <div>
+                          <div className="space-y-1 w-full">
                             <p className="font-medium text-sm">{req.profile.name}</p>
-                            <p className="text-xs text-muted-foreground line-clamp-1">
+                            <p className="text-sm text-muted-foreground whitespace-pre-wrap leading-relaxed">
                               {req.message}
                             </p>
                           </div>
                         </div>
-                        <div className="flex gap-2 shrink-0">
+                        <div className="flex gap-2 shrink-0 self-end sm:self-start">
                           <Button
                             size="sm"
-                            className="h-8 px-3 rounded-lg"
+                            variant="outline"
+                            className="h-8 px-3 rounded-lg text-xs"
+                            asChild
+                          >
+                            <Link href={`/profile/${req.profile.id}`}>View Profile</Link>
+                          </Button>
+                          <Button
+                            size="sm"
+                            className="h-8 px-3 rounded-lg text-xs"
                             onClick={() => handleHostAction(req.profile.id, 'approve')}
                           >
                             Approve
