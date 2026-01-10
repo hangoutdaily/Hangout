@@ -163,6 +163,14 @@ export default function EventDetailClient({ id }: EventDetailClientProps) {
 
   const [joinRequests, setJoinRequests] = useState<JoinRequest[]>([]);
   const [requestsLoading, setRequestsLoading] = useState(false);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (toastMessage) {
+      const timer = setTimeout(() => setToastMessage(null), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [toastMessage]);
 
   const { isLoaded } = useLoadScript({
     googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || '',
@@ -236,7 +244,7 @@ export default function EventDetailClient({ id }: EventDetailClientProps) {
         setEvent(res.data.event);
       }
     } catch (e) {
-      console.error(e);
+      setToastMessage('Too popular! This hangout is full');
     }
   };
 
@@ -742,6 +750,12 @@ export default function EventDetailClient({ id }: EventDetailClientProps) {
           setShowUnjoinDialog(false);
         }}
       />
+
+      {toastMessage && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[100] px-6 py-3 bg-red-600 text-white font-medium rounded-full shadow-xl animate-in fade-in slide-in-from-bottom-4">
+          {toastMessage}
+        </div>
+      )}
     </div>
   );
 }

@@ -32,7 +32,7 @@ export default function ConfirmUnjoinDialog({
           className="p-6 space-y-6"
         >
           <DialogHeader>
-            <DialogTitle className="text-lg font-semibold">Leave the Event?</DialogTitle>
+            <DialogTitle className="text-lg font-semibold">You wanna leave?</DialogTitle>
             <DialogDescription className="text-sm text-muted-foreground">
               Your join request will be cancelled and you will be removed from the member list.
             </DialogDescription>
