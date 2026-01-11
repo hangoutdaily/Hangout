@@ -55,7 +55,7 @@ export default function Header() {
 
   const mobileNav = [
     { href: '/', label: 'Home', icon: Home },
-    { href: '/wishlist', label: 'Wishlist', icon: Heart },
+    { href: '/my-hangouts', label: 'My Hangouts', icon: Heart },
     { href: '/create', label: 'Create', icon: PlusSquare },
     { href: '/chats', label: 'Chats', icon: MessageCircle },
     { href: '/profile', label: 'Profile', icon: Users },
@@ -190,8 +190,8 @@ export default function Header() {
                 </Link>
               ))}
               <Link
-                href="/wishlist"
-                title="Wishlist"
+                href="/my-hangouts"
+                title="My Hangouts"
                 className="hover:text-foreground transition-colors"
               >
                 <Heart className="h-5 w-5" />

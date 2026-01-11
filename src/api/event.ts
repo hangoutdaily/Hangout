@@ -26,3 +26,5 @@ export const approveJoinRequest = (eventId: string | number, profileId: string |
   api.post(`/events/${eventId}/requests/${profileId}/approve`);
 export const rejectJoinRequest = (eventId: string | number, profileId: string | number) =>
   api.post(`/events/${eventId}/requests/${profileId}/reject`);
+
+export const cancelHostedEvent = (id: string | number) => api.patch(`/events/${id}/cancel`);
