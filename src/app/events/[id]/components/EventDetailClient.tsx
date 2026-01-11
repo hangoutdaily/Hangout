@@ -33,6 +33,7 @@ import {
   getEventJoinRequests,
   approveJoinRequest,
   rejectJoinRequest,
+  cancelHostedEvent,
 } from '@/api/event';
 import { AuthContext } from '@/context/AuthContext';
 import ConfirmUnjoinDialog from '@/components/layout/ConfirmUnjoinDialog';
@@ -108,6 +109,7 @@ type EventDetail = {
     bio: string | null;
   };
   attendees: Attendee[];
+  status: 'UPCOMING' | 'COMPLETED' | 'CANCELLED';
 };
 
 type JoinRequest = {
@@ -153,6 +155,7 @@ export default function EventDetailClient({ id }: EventDetailClientProps) {
   const [isLiked, setIsLiked] = useState(false);
   const [showJoinDialog, setShowJoinDialog] = useState(false);
   const [showUnjoinDialog, setShowUnjoinDialog] = useState(false);
+  const [showCancelDialog, setShowCancelDialog] = useState(false);
 
   const [isShareOpen, setIsShareOpen] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
@@ -248,6 +251,18 @@ export default function EventDetailClient({ id }: EventDetailClientProps) {
     }
   };
 
+  const handleCancelEvent = async () => {
+    if (!event) return;
+    try {
+      await cancelHostedEvent(event.id);
+      setEvent({ ...event, status: 'CANCELLED' });
+      setToastMessage('Hangout has been cancelled.');
+      setShowCancelDialog(false);
+    } catch (e) {
+      setToastMessage('Failed to cancel hangout.');
+    }
+  };
+
   const handleToggleLike = async () => {
     const next = !isLiked;
     setIsLiked(next);
@@ -336,27 +351,34 @@ export default function EventDetailClient({ id }: EventDetailClientProps) {
         <Loader2 className="animate-spin text-muted-foreground" />
       </div>
     );
-  if (!event) return <div className="p-10 text-center text-muted-foreground">Event not found.</div>;
+  if (!event)
+    return <div className="p-10 text-center text-muted-foreground">Hangout not found.</div>;
 
   const isHost = user?.profileId === event.host.id;
   const eventDate = new Date(event.datetime);
   const attendeesCount = event.attendees.length;
   const coverImage = getCoverImage(event);
 
+  const isPast = eventDate < new Date();
+  const isFull = attendeesCount >= event.maxAttendees;
+  const isCancelled = event.status === 'CANCELLED';
+
   const ActionButton = () => (
     <Button
       size="lg"
       className={cn(
         'w-full font-medium text-base h-12 transition-all rounded-xl',
-        requestStatus === 'JOINED'
-          ? 'bg-green-600 hover:bg-green-700 text-white'
-          : requestStatus === 'REQUESTED'
-            ? 'bg-indigo-600 hover:bg-indigo-700 text-white'
-            : 'bg-foreground text-background hover:bg-foreground/90'
+        isCancelled || isPast
+          ? 'bg-muted text-muted-foreground cursor-not-allowed hover:bg-muted'
+          : requestStatus === 'JOINED'
+            ? 'bg-green-600 hover:bg-green-700 text-white'
+            : requestStatus === 'REQUESTED'
+              ? 'bg-indigo-600 hover:bg-indigo-700 text-white'
+              : 'bg-foreground text-background hover:bg-foreground/90'
       )}
-      disabled={isHost}
+      disabled={isHost || isCancelled || isPast || (isFull && requestStatus === 'NONE')}
       onClick={() => {
-        if (isHost) return;
+        if (isHost || isCancelled || isPast) return;
         if (requestStatus === 'JOINED' || requestStatus === 'REQUESTED') setShowUnjoinDialog(true);
         else setShowJoinDialog(true);
       }}
@@ -365,18 +387,24 @@ export default function EventDetailClient({ id }: EventDetailClientProps) {
         'You are Hosting'
       ) : (
         <>
-          {requestStatus === 'JOINED' && (
+          {isCancelled && 'Hangout Cancelled'}
+          {!isCancelled && isPast && 'Hangout Ended'}
+          {!isCancelled && !isPast && (
             <>
-              <CheckCircle2 className="mr-2 h-5 w-5" /> Joined
+              {requestStatus === 'JOINED' && (
+                <>
+                  <CheckCircle2 className="mr-2 h-5 w-5" /> Joined
+                </>
+              )}
+              {requestStatus === 'REQUESTED' && (
+                <>
+                  <Clock className="mr-2 h-5 w-5" /> Requested
+                </>
+              )}
+              {requestStatus === 'NONE' && (isFull ? 'Hangout Full' : 'Join Hangout')}
+              {requestStatus === 'REJECTED' && 'Request Again'}
             </>
           )}
-          {requestStatus === 'REQUESTED' && (
-            <>
-              <Clock className="mr-2 h-5 w-5" /> Requested
-            </>
-          )}
-          {requestStatus === 'NONE' && 'Join Hangout'}
-          {requestStatus === 'REJECTED' && 'Request Again'}
         </>
       )}
     </Button>
@@ -439,6 +467,24 @@ export default function EventDetailClient({ id }: EventDetailClientProps) {
                 <Sparkles className="w-3 h-3 mr-1.5 text-yellow-500" />
                 {formatCategory(event.category)}
               </Badge>
+              {isCancelled && (
+                <Badge variant="destructive" className="font-medium px-3 py-1">
+                  Called Off
+                </Badge>
+              )}
+              {!isCancelled && isPast && (
+                <Badge
+                  variant="secondary"
+                  className="bg-muted text-muted-foreground font-medium px-3 py-1"
+                >
+                  Done
+                </Badge>
+              )}
+              {!isCancelled && !isPast && isFull && (
+                <Badge variant="destructive" className="bg-red-500 font-medium px-3 py-1">
+                  FULL
+                </Badge>
+              )}
             </div>
             <h1 className="text-3xl md:text-5xl font-medium tracking-tight text-foreground drop-shadow-sm">
               {event.title}
@@ -671,10 +717,19 @@ export default function EventDetailClient({ id }: EventDetailClientProps) {
               </section>
             )}
 
-            <div className="flex justify-center pt-8 pb-12">
+            <div className="flex flex-col gap-4 justify-center pt-8 pb-12">
               <div className="w-full">
                 <ActionButton />
               </div>
+              {isHost && !isCancelled && !isPast && (
+                <Button
+                  variant="ghost"
+                  className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                  onClick={() => setShowCancelDialog(true)}
+                >
+                  Cancel Hangout
+                </Button>
+              )}
             </div>
           </div>
         </div>
@@ -758,6 +813,28 @@ export default function EventDetailClient({ id }: EventDetailClientProps) {
           setShowUnjoinDialog(false);
         }}
       />
+
+      <Dialog open={showCancelDialog} onOpenChange={setShowCancelDialog}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Cancel Hangout</DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <p>
+              Are you sure you want to cancel this hangout? This action cannot be undone and all
+              attendees will be notified.
+            </p>
+          </div>
+          <div className="flex justify-end gap-3">
+            <Button variant="outline" onClick={() => setShowCancelDialog(false)}>
+              Keep it
+            </Button>
+            <Button variant="destructive" onClick={handleCancelEvent}>
+              Yes, Cancel it
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {toastMessage && (
         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[100] px-6 py-3 bg-red-600 text-white font-medium rounded-full shadow-xl animate-in fade-in slide-in-from-bottom-4">
