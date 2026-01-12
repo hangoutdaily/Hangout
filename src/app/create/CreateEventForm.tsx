@@ -373,10 +373,10 @@ export default function CreateEventForm() {
           </Field>
         </div>
 
-        <Field label="Max Attendees" error={errors.maxAttendees}>
+        <Field label="Max Attendees(Including Host)" error={errors.maxAttendees}>
           <FieldInput
             type="number"
-            min="1"
+            min="2"
             placeholder="e.g., 25"
             value={form.maxAttendees}
             onChange={(e) => update('maxAttendees', e.target.value)}

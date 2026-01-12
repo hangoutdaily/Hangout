@@ -22,6 +22,7 @@ import {
 import Image from 'next/image';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useRouter } from 'next/navigation';
 import {
   cancelJoinEvent,
   getEvent,
@@ -149,6 +150,7 @@ const formatCategory = (cat: string) => {
 };
 
 export default function EventDetailClient({ id }: EventDetailClientProps) {
+  const router = useRouter();
   const { user } = useContext(AuthContext);
   const [event, setEvent] = useState<EventDetail | null>(null);
   const [loading, setLoading] = useState(true);
@@ -378,6 +380,10 @@ export default function EventDetailClient({ id }: EventDetailClientProps) {
       )}
       disabled={isHost || isCancelled || isPast || (isFull && requestStatus === 'NONE')}
       onClick={() => {
+        if (!user) {
+          router.push('/login');
+          return;
+        }
         if (isHost || isCancelled || isPast) return;
         if (requestStatus === 'JOINED' || requestStatus === 'REQUESTED') setShowUnjoinDialog(true);
         else setShowJoinDialog(true);
