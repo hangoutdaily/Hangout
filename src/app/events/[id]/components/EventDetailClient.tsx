@@ -89,6 +89,7 @@ type Attendee = {
   selfie: string | null;
   age?: number;
   gender?: string;
+  displayId?: string;
 };
 
 type EventDetail = {
@@ -108,6 +109,7 @@ type EventDetail = {
     name: string | null;
     selfie: string | null;
     bio: string | null;
+    displayId: string | null;
   };
   attendees: Attendee[];
   status: 'UPCOMING' | 'COMPLETED' | 'CANCELLED';
@@ -120,6 +122,7 @@ type JoinRequest = {
     id: number;
     name: string;
     selfie: string | null;
+    displayId: string | null;
   };
 };
 
@@ -605,7 +608,10 @@ export default function EventDetailClient({ id }: EventDetailClientProps) {
                 Meet your host
               </h2>
 
-              <div className="flex items-start gap-5 p-6 rounded-3xl border border-border bg-card/50 hover:bg-card hover:shadow-sm transition-all">
+              <Link
+                href={event.host.displayId ? `/profile/${event.host.displayId}` : '#'}
+                className="flex items-start gap-5 p-6 rounded-3xl border border-border bg-card/50 hover:bg-card hover:shadow-sm transition-all w-full"
+              >
                 <div className="relative shrink-0">
                   <Avatar className="h-20 w-20 border-2 border-background shadow-md">
                     <AvatarImage src={event.host.selfie || ''} className="object-cover" />
@@ -636,7 +642,7 @@ export default function EventDetailClient({ id }: EventDetailClientProps) {
                     </Badge>
                   </div>
                 </div>
-              </div>
+              </Link>
             </section>
 
             {event.attendees.length > 0 && (
@@ -651,8 +657,9 @@ export default function EventDetailClient({ id }: EventDetailClientProps) {
                 </div>
                 <div className="flex flex-wrap gap-4">
                   {event.attendees.map((attendee) => (
-                    <div
+                    <Link
                       key={attendee.id}
+                      href={attendee.displayId ? `/profile/${attendee.displayId}` : '#'}
                       className="group flex flex-col items-center gap-2 w-16 cursor-pointer"
                     >
                       <Avatar className="h-16 w-16 border-2 border-transparent group-hover:border-foreground transition-all">
@@ -662,7 +669,7 @@ export default function EventDetailClient({ id }: EventDetailClientProps) {
                       <p className="text-xs text-muted-foreground group-hover:text-foreground transition-colors truncate w-full text-center">
                         {attendee.name.split(' ')[0]}
                       </p>
-                    </div>
+                    </Link>
                   ))}
                 </div>
               </section>
@@ -706,7 +713,7 @@ export default function EventDetailClient({ id }: EventDetailClientProps) {
                             className="h-8 px-3 rounded-lg text-xs"
                             asChild
                           >
-                            <Link href={`/profile/${req.profile.id}`}>View Profile</Link>
+                            <Link href={`/profile/${req.profile.displayId}`}>View Profile</Link>
                           </Button>
                           <Button
                             size="sm"
