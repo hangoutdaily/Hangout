@@ -373,7 +373,7 @@ export default function CreateEventForm() {
           </Field>
         </div>
 
-        <Field label="Max Attendees(Including Host)" error={errors.maxAttendees}>
+        <Field label="How Many People? (Including You)" error={errors.maxAttendees}>
           <FieldInput
             type="number"
             min="2"
@@ -383,6 +383,7 @@ export default function CreateEventForm() {
             error={!!errors.maxAttendees}
           />
         </Field>
+        <p className="mt-1 text-xs text-muted-foreground">Less crowd, more connection.</p>
       </Section>
 
       <Section icon={Wallet} title="Who’s Paying?" subtitle="Free hangout or split the bill">

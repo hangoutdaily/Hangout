@@ -31,6 +31,7 @@ export interface HostedEvent {
 
 export interface ProfileData {
   id: number;
+  displayId: string;
   name: string;
   age: number | string;
   gender: string;
