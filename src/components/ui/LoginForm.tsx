@@ -70,6 +70,11 @@ export default function LoginForm() {
         payload.phone = formData.email;
       }
       const res = await login(payload);
+      // if profileid is not present, redirect to onboarding
+      if (!res.data.user.profileId) {
+        router.replace('/onboarding');
+        return;
+      }
       setUser(res.data.user);
       localStorage.setItem('accessToken', res.data.accessToken);
       localStorage.setItem('refreshToken', res.data.refreshToken);

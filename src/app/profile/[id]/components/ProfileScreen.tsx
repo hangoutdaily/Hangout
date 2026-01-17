@@ -268,8 +268,10 @@ export default function ProfileScreen({ id }: ProfileScreenProps) {
     return (
       <div className="max-w-3xl mx-auto px-4 py-20 text-center">
         <AlertTriangle className="w-10 h-10 text-destructive mx-auto mb-2" />
-        <h2 className="text-2xl font-bold mb-1">Error Loading Profile</h2>
-        <p className="text-muted-foreground">{error || 'Profile not found'}</p>
+        <h2 className="text-2xl font-bold mb-1">
+          Oops! We couldn’t load your profile. Please log in again.
+        </h2>
+        <p className="text-muted-foreground">{error || 'We lost the thread.'}</p>
       </div>
     );
   }

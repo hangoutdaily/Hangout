@@ -238,7 +238,7 @@ export default function EventDetailClient({ id }: EventDetailClientProps) {
   };
 
   const handleHostAction = async (profileId: number, action: 'approve' | 'reject') => {
-    if (!event) return;
+    if (!event || event.status === 'CANCELLED') return;
     try {
       if (action === 'approve') {
         await approveJoinRequest(event.id, profileId);
@@ -718,6 +718,7 @@ export default function EventDetailClient({ id }: EventDetailClientProps) {
                           <Button
                             size="sm"
                             className="h-8 px-3 rounded-lg text-xs"
+                            disabled={isCancelled}
                             onClick={() => handleHostAction(req.profile.id, 'approve')}
                           >
                             Approve
