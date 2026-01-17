@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Screen1 } from '@/app/onboarding/components/Screen1';
 import { Screen2 } from '@/app/onboarding/components/Screen2';
 import { Screen3 } from '@/app/onboarding/components/Screen3';
@@ -44,6 +44,10 @@ export function OnboardingContainer() {
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
   const router = useRouter();
 
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [currentScreen]);
+
   const validateScreenRealtime = (
     screenIndex: number,
     data: Partial<ProfileData>
@@ -62,10 +66,10 @@ export function OnboardingContainer() {
       if (!data.bio?.trim()) errors.bio = 'Bio is required';
       if (!data.lookingFor?.trim()) errors.lookingFor = "Tell us what you're looking for";
       if ((data.traits || []).length !== 3) errors.traits = 'Select exactly 3 traits';
-      if ((data.interests || []).length < 3) errors.interests = 'Select at least 3 interests';
-      if (!data.topSongs?.trim()) errors.topSongs = 'Share your favorite songs';
-      if (!data.topPlaces?.trim()) errors.topPlaces = 'Share your favorite places';
-      if (!data.joyfulMoment?.trim()) errors.joyfulMoment = 'Share your joyful moment';
+      if ((data.interests || []).length < 1) errors.interests = 'Select at least 1 interest';
+      // if (!data.topSongs?.trim()) errors.topSongs = 'Share your favorite songs';
+      // if (!data.topPlaces?.trim()) errors.topPlaces = 'Share your favorite places';
+      // if (!data.joyfulMoment?.trim()) errors.joyfulMoment = 'Share your joyful moment';
     } else if (screenIndex === 2) {
       if (!data.drinks) errors.drinks = 'Please select an option';
       if (!data.smoke) errors.smoke = 'Please select an option';

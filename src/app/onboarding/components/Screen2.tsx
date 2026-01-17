@@ -136,7 +136,7 @@ export function Screen2({ data, onChange, errors = {} }: Screen2Props) {
         </div>
 
         <div className="space-y-3">
-          <Label className="text-sm font-medium text-foreground">What are you into?</Label>
+          <Label className="text-sm font-medium text-foreground">What are you excited about?</Label>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
             {interests.map(({ name, Icon }) => (
               <button

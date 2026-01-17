@@ -244,7 +244,9 @@ export default function CreateEventForm() {
       router.push('/');
     } catch (err) {
       const error = err as ApiError;
-      setGeneralError(error.response?.data?.error || 'Failed to create hangout. Please try again.');
+      setGeneralError(
+        error.response?.data?.error || 'Hangouts can only be created by logged-in users.'
+      );
       setIsLoading(false);
     }
   }
@@ -412,7 +414,7 @@ export default function CreateEventForm() {
         <AnimatePresence mode="wait">
           {progress === 100 ? (
             <motion.p key="ready" className="text-success flex items-center gap-1 text-sm">
-              <CheckCircle2 className="h-4 w-4" /> All set! Ready to create.
+              <CheckCircle2 className="h-4 w-4" /> Looks good. People are going to love this.
             </motion.p>
           ) : (
             <motion.p key="hint" className="text-muted-foreground text-sm">

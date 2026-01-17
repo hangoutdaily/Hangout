@@ -5,6 +5,11 @@ const api = axios.create({
   withCredentials: true,
 });
 
+const refreshApi = axios.create({
+  baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080',
+  withCredentials: true,
+});
+
 // Request interceptor to add Bearer token
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('accessToken');
@@ -29,7 +34,7 @@ api.interceptors.response.use(
         if (!refreshToken) throw new Error('No refresh token');
 
         // Call refresh endpoint
-        const { data } = await api.post('/auth/refresh', { refreshToken });
+        const { data } = await refreshApi.post('/auth/refresh', { refreshToken });
 
         // Update tokens
         localStorage.setItem('accessToken', data.accessToken);
