@@ -126,23 +126,58 @@ type JoinRequest = {
   };
 };
 
+const categories = [
+  'movies',
+  'sports',
+  'walk',
+  'run',
+  'coffee_tea',
+  'travel',
+  'share_ride',
+  'lunch',
+  'dinner',
+  'brunch',
+  'reading',
+  'volunteering',
+  'comedy',
+  'games',
+  'clubbing',
+  'fests_fairs',
+  'sightseeing',
+  'nightlife',
+  'meetup',
+  'other',
+] as const;
+
+type CategoryKey = (typeof categories)[number];
+
+const CATEGORY_IMAGES: Record<CategoryKey, string> = {
+  movies: '/assets/movie.png',
+  sports: '/assets/sports.png',
+  walk: '/assets/walk.png',
+  run: '/assets/walk.png',
+  coffee_tea: '/assets/coffee.png',
+  travel: '/assets/travel.png',
+  share_ride: '/assets/travel.png',
+  lunch: '/assets/food.png',
+  dinner: '/assets/food.png',
+  brunch: '/assets/food.png',
+  reading: '/assets/reading.png',
+  volunteering: '/assets/volunteering.png',
+  comedy: '/assets/comedy.png',
+  games: '/assets/games.png',
+  clubbing: '/assets/clubbing.png',
+  fests_fairs: '/assets/fair.png',
+  sightseeing: '/assets/fair.png',
+  nightlife: '/assets/night-life.png',
+  meetup: '/assets/games.png',
+  other: '/assets/fair.png',
+};
+
 const getCoverImage = (event: EventDetail) => {
-  if (event.photos && event.photos.length > 0) return event.photos[0];
-  // TODO: we will use catoon arts
-  const cat = event.category.toLowerCase();
-  if (cat.includes('coffee'))
-    return 'https://images.unsplash.com/photo-1509042239860-f550ce710b93?q=80&w=2574';
-  if (cat.includes('walk') || cat.includes('hike'))
-    return 'https://images.unsplash.com/photo-1551632811-561732d1e306?q=80&w=2670';
-  if (cat.includes('movie'))
-    return 'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?q=80&w=2670';
-  if (cat.includes('sport'))
-    return 'https://images.unsplash.com/photo-1461896836934-ffe607ba8211?q=80&w=2670';
-  if (cat.includes('night'))
-    return 'https://images.unsplash.com/photo-1514525253440-b393452e8d26?q=80&w=2574';
-  if (cat.includes('food') || cat.includes('dinner'))
-    return 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?q=80&w=2670';
-  return 'https://images.unsplash.com/photo-1551632811-561732d1e306?q=80&w=2670';
+  if (event.photos?.length) return event.photos[0];
+  const key = event.category.toLowerCase() as CategoryKey;
+  return CATEGORY_IMAGES[key] || '/assets/fair.png';
 };
 
 const formatCategory = (cat: string) => {
@@ -456,15 +491,15 @@ export default function EventDetailClient({ id }: EventDetailClientProps) {
         </div>
       </nav>
 
-      <div className="w-full h-[40vh] md:h-[50vh] relative bg-muted overflow-hidden">
+      <div className="w-full h-[42vh] md:h-[48vh] lg:h-[420px] relative bg-muted overflow-hidden">
         <Image
           src={coverImage}
           alt={event.title}
           fill
-          className="object-cover object-center transition-transform hover:scale-105 duration-700"
+          className="object-cover object-[center_30%] md:object-[center_25%] transition-transform hover:scale-105 duration-700"
           priority
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/20 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/10 to-transparent" />
 
         <div className="absolute bottom-0 left-0 right-0 p-4 lg:p-8">
           <div className="max-w-4xl mx-auto w-full">

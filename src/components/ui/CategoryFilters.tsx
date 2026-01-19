@@ -51,7 +51,6 @@ const categoryIcons: Record<string, LucideIcon> = {
   BRUNCH: UtensilsCrossed,
   READING: BookOpen,
   VOLUNTEERING: HandHeart,
-  CONSULTS: Stethoscope,
   COMEDY: Smile,
   GAMES: Gamepad2,
   CLUBBING: PartyPopper,
