@@ -1,0 +1,542 @@
+'use client';
+
+import { useState, useEffect, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
+import { motion, AnimatePresence } from 'framer-motion';
+import {
+  Calendar,
+  MapPin,
+  Tag,
+  Wallet,
+  CheckCircle2,
+  Loader2,
+  LocateFixed,
+  ArrowLeft,
+} from 'lucide-react';
+import { GoogleMap, Marker, useLoadScript } from '@react-google-maps/api';
+import { Field, FieldInput, FieldTextarea, FieldSelect } from '@/components/ui/FormField';
+import { Button } from '@/components/ui/shadcn/button';
+import { cn } from '@/lib/utils';
+import { getEvent, updateEvent, getCategories } from '@/api/event';
+import { DatePicker } from '@/app/create/components/DatePicker';
+import { TimePicker } from '@/app/create/components/TimePicker';
+import { ApiError } from '@/types';
+import Link from 'next/link';
+
+const LIBRARIES: ('places' | 'geometry')[] = ['places', 'geometry'];
+const DEFAULT_CENTER = { lat: 23.2156, lng: 72.6369 };
+const MAP_CONTAINER_STYLE = {
+  width: '100%',
+  height: '300px',
+  borderRadius: '0.75rem',
+};
+
+type Category = string;
+type PriceType = 'FREE' | 'SPLIT_BILL';
+
+interface GeoLocation {
+  lat: number;
+  lng: number;
+}
+
+interface EventForm {
+  title: string;
+  description: string;
+  category: Category | '';
+  city: string;
+  state: string;
+  addressLine: string;
+  date: string;
+  time: string;
+  maxAttendees: string;
+  priceType: PriceType | '';
+  geo: GeoLocation | null;
+}
+
+function formatCategoryName(enumValue: string): string {
+  return enumValue
+    .replace(/_/g, ' ')
+    .replace(/\w\S*/g, (txt) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase());
+}
+
+export default function EditEventForm({ id }: { id: string }) {
+  const router = useRouter();
+
+  const { isLoaded } = useLoadScript({
+    googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || '',
+    libraries: LIBRARIES,
+  });
+
+  const [form, setForm] = useState<EventForm>({
+    title: '',
+    category: '',
+    description: '',
+    city: '',
+    state: '',
+    addressLine: '',
+    date: '',
+    time: '',
+    maxAttendees: '',
+    priceType: '',
+    geo: null,
+  });
+
+  const [categories, setCategories] = useState<string[]>([]);
+  const [categoryMap, setCategoryMap] = useState<Record<string, string>>({});
+  const [currentJoinedCount, setCurrentJoinedCount] = useState(0);
+  const [errors, setErrors] = useState<Partial<Record<keyof EventForm, string>>>({});
+  const [submitted, setSubmitted] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [generalError, setGeneralError] = useState<string | null>(null);
+
+  const [mapCenter, setMapCenter] = useState(DEFAULT_CENTER);
+
+  useEffect(() => {
+    async function loadData() {
+      try {
+        const [catRes, eventRes] = await Promise.all([getCategories(), getEvent(id)]);
+
+        const enumValues = catRes.data.categories as string[];
+        const displayCategories = enumValues.map(formatCategoryName);
+        setCategories(displayCategories);
+
+        const newCategoryMap = displayCategories.reduce(
+          (acc, displayName, idx) => {
+            acc[displayName] = enumValues[idx];
+            return acc;
+          },
+          {} as Record<string, string>
+        );
+        setCategoryMap(newCategoryMap);
+
+        const ev = eventRes.data.event;
+        setCurrentJoinedCount(ev.attendees.length);
+        const dt = new Date(ev.datetime);
+        const dateStr = `${String(dt.getDate()).padStart(2, '0')}/${String(dt.getMonth() + 1).padStart(2, '0')}/${dt.getFullYear()}`;
+        const timeStr = `${String(dt.getHours()).padStart(2, '0')}:${String(dt.getMinutes()).padStart(2, '0')}`;
+
+        const reverseCategoryMap = Object.fromEntries(
+          Object.entries(newCategoryMap).map(([k, v]) => [v, k])
+        );
+
+        setForm({
+          title: ev.title,
+          description: ev.description,
+          category: reverseCategoryMap[ev.category] || '',
+          city: ev.city,
+          state: ev.state || '',
+          addressLine: ev.addressLine,
+          date: dateStr,
+          time: timeStr,
+          maxAttendees: String(ev.maxAttendees),
+          priceType: ev.priceType,
+          geo: ev.geo || null,
+        });
+
+        if (ev.geo) {
+          setMapCenter(ev.geo);
+        }
+      } catch (err) {
+        setGeneralError('Failed to load hangout details.');
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    loadData();
+  }, [id]);
+
+  useEffect(() => {
+    if (!isLoaded) return;
+    if (!form.city && !form.addressLine) return;
+
+    const timeOutId = setTimeout(() => {
+      const fullAddress = `${form.addressLine}, ${form.city}, ${form.state}`;
+      const geocoder = new google.maps.Geocoder();
+
+      geocoder.geocode({ address: fullAddress }, (results, status) => {
+        if (status === 'OK' && results && results[0]) {
+          const location = results[0].geometry.location;
+          const newGeo = { lat: location.lat(), lng: location.lng() };
+
+          setMapCenter(newGeo);
+          setForm((prev) => ({ ...prev, geo: newGeo }));
+        }
+      });
+    }, 1000);
+
+    return () => clearTimeout(timeOutId);
+  }, [form.addressLine, form.city, form.state, isLoaded]);
+
+  const onMapClick = useCallback((e: google.maps.MapMouseEvent) => {
+    if (e.latLng) {
+      update('geo', { lat: e.latLng.lat(), lng: e.latLng.lng() });
+    }
+  }, []);
+
+  const onMarkerDragEnd = useCallback((e: google.maps.MapMouseEvent) => {
+    if (e.latLng) {
+      update('geo', { lat: e.latLng.lat(), lng: e.latLng.lng() });
+    }
+  }, []);
+
+  const requiredFields: (keyof EventForm)[] = [
+    'title',
+    'description',
+    'category',
+    'city',
+    'state',
+    'addressLine',
+    'date',
+    'time',
+    'maxAttendees',
+    'priceType',
+  ];
+  const progress = Math.round(
+    (requiredFields.filter((key) => !!form[key]).length / requiredFields.length) * 100
+  );
+
+  function validate(next?: Partial<EventForm>) {
+    const f = { ...form, ...(next || {}) };
+    const e: Partial<Record<keyof EventForm, string>> = {};
+
+    if (!f.title) e.title = 'Title is required';
+    else if (f.title.length < 5) e.title = 'Title must be at least 5 characters long';
+
+    if (!f.description) e.description = 'Description is required';
+    else if (f.description.length < 5)
+      e.description = 'Description must be at least 5 characters long';
+
+    if (!f.category) e.category = 'Category is required';
+    if (!f.city) e.city = 'City is required';
+    if (!f.state) e.state = 'State is required';
+    if (!f.addressLine) e.addressLine = 'Address line is required';
+
+    if (!f.date) e.date = 'Date is required';
+    if (!f.time) e.time = 'Time is required';
+    if (!f.maxAttendees || Number(f.maxAttendees) < 1)
+      e.maxAttendees = 'At least 1 attendee is required';
+    else if (Number(f.maxAttendees) < currentJoinedCount)
+      e.maxAttendees = `Capacity cannot be less than already joined attendees (${currentJoinedCount})`;
+
+    if (!f.priceType) e.priceType = 'Price type is required';
+
+    setErrors(e);
+    return Object.keys(e).length === 0;
+  }
+
+  function update<K extends keyof EventForm>(key: K, value: EventForm[K]) {
+    setForm((prev) => {
+      const next = { ...prev, [key]: value };
+      if (submitted) validate(next);
+      return next;
+    });
+  }
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setSubmitted(true);
+    setGeneralError(null);
+    if (!validate()) return;
+    setIsUpdating(true);
+    try {
+      const [day, month, year] = form.date.split('/').map(Number);
+      const [hour, minute] = form.time.split(':').map(Number);
+      const datetime = new Date(year, month - 1, day, hour, minute);
+
+      const payload = {
+        title: form.title,
+        description: form.description,
+        category: categoryMap[form.category],
+        city: form.city,
+        state: form.state,
+        addressLine: form.addressLine,
+        datetime: datetime.toISOString(),
+        maxAttendees: Number(form.maxAttendees),
+        priceType: form.priceType,
+        geo: form.geo,
+      };
+
+      await updateEvent(id, payload);
+      router.push(`/events/${id}`);
+    } catch (err) {
+      const error = err as ApiError;
+      setGeneralError(error.response?.data?.error || 'Failed to update hangout.');
+      setIsUpdating(false);
+    }
+  }
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center p-12">
+        <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-8">
+      <Link
+        href={`/events/${id}`}
+        className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors mb-4"
+      >
+        <ArrowLeft className="w-4 h-4" /> Back to Hangout
+      </Link>
+
+      {generalError && <p className="text-sm text-destructive">{generalError}</p>}
+
+      <Section icon={Tag} title="What’s the Plan?" subtitle="Set the vibe people sign up for">
+        <Field label="Title" error={errors.title}>
+          <FieldInput
+            placeholder="e.g., Sunday Brunch & Gossip"
+            value={form.title}
+            onChange={(e) => update('title', e.target.value)}
+            error={!!errors.title}
+          />
+        </Field>
+
+        <Field label="Category" error={errors.category}>
+          <FieldSelect
+            value={form.category}
+            onChange={(val) => update('category', val as Category)}
+            options={categories}
+            placeholder={categories.length ? 'Select category' : 'Loading categories...'}
+            error={!!errors.category}
+          />
+        </Field>
+
+        <Field label="Description" error={errors.description}>
+          <FieldTextarea
+            placeholder="Describe what people can expect..."
+            value={form.description}
+            onChange={(e) => update('description', e.target.value)}
+            error={!!errors.description}
+          />
+        </Field>
+      </Section>
+
+      <Section
+        icon={MapPin}
+        title="Where Are We Meeting?"
+        subtitle="Help people find the exact spot"
+      >
+        <div className="grid sm:grid-cols-2 gap-4">
+          <Field label="City" error={errors.city}>
+            <FieldInput
+              placeholder="e.g., Gandhinagar"
+              value={form.city}
+              onChange={(e) => update('city', e.target.value)}
+              error={!!errors.city}
+            />
+          </Field>
+          <Field label="State" error={errors.state}>
+            <FieldInput
+              placeholder="e.g., Gujarat"
+              value={form.state}
+              onChange={(e) => update('state', e.target.value)}
+              error={!!errors.state}
+            />
+          </Field>
+        </div>
+
+        <Field label="Address Line" error={errors.addressLine}>
+          <FieldInput
+            placeholder="Street, building, landmark..."
+            value={form.addressLine}
+            onChange={(e) => update('addressLine', e.target.value)}
+            error={!!errors.addressLine}
+          />
+        </Field>
+
+        <div className="mt-4 border border-border rounded-xl overflow-hidden bg-secondary/20">
+          {!isLoaded ? (
+            <div className="h-[300px] flex items-center justify-center text-muted-foreground">
+              <Loader2 className="w-6 h-6 animate-spin mr-2" /> Loading Map...
+            </div>
+          ) : (
+            <GoogleMap
+              mapContainerStyle={MAP_CONTAINER_STYLE}
+              center={mapCenter}
+              zoom={14}
+              onClick={onMapClick}
+              options={{
+                streetViewControl: false,
+                mapTypeControl: false,
+              }}
+            >
+              {form.geo && (
+                <Marker
+                  position={form.geo}
+                  draggable={true}
+                  onDragEnd={onMarkerDragEnd}
+                  animation={google.maps.Animation.DROP}
+                />
+              )}
+            </GoogleMap>
+          )}
+          <div className="p-3 text-xs text-muted-foreground bg-secondary/50 flex items-center gap-2">
+            <LocateFixed className="w-4 h-4" />
+            <span>
+              Map auto-updates based on address. Click or drag the pin to refine precise location.
+            </span>
+          </div>
+        </div>
+      </Section>
+
+      <Section
+        icon={Calendar}
+        title="When & Capacity"
+        subtitle="Pick the date, time, and group size"
+      >
+        <div className="grid sm:grid-cols-2 gap-4">
+          <Field label="Date" error={errors.date}>
+            <DatePicker
+              value={form.date}
+              onChange={(val) => update('date', val)}
+              error={!!errors.date}
+            />
+          </Field>
+
+          <Field label="Time" error={errors.time}>
+            <TimePicker
+              value={form.time}
+              onChange={(val) => update('time', val)}
+              error={!!errors.time}
+            />
+          </Field>
+        </div>
+
+        <Field label="How Many People? (Including You)" error={errors.maxAttendees}>
+          <FieldInput
+            type="number"
+            min="2"
+            placeholder="e.g., 25"
+            value={form.maxAttendees}
+            onChange={(e) => update('maxAttendees', e.target.value)}
+            error={!!errors.maxAttendees}
+          />
+        </Field>
+        <p className="mt-1 text-xs text-muted-foreground">Less crowd, more connection.</p>
+      </Section>
+
+      <Section icon={Wallet} title="Who’s Paying?" subtitle="Free hangout or split the bill">
+        <div className="grid sm:grid-cols-2 gap-3">
+          <PriceOption
+            label="Free"
+            description="Completely free for all attendees"
+            selected={form.priceType === 'FREE'}
+            onClick={() => update('priceType', 'FREE')}
+          />
+          <PriceOption
+            label="Split the Bill"
+            description="Everyone contributes equally"
+            selected={form.priceType === 'SPLIT_BILL'}
+            onClick={() => update('priceType', 'SPLIT_BILL')}
+          />
+        </div>
+        {errors.priceType && <Error>{errors.priceType}</Error>}
+      </Section>
+
+      <div className="space-y-4">
+        <AnimatePresence mode="wait">
+          {progress === 100 ? (
+            <motion.p
+              key="ready"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="text-success flex items-center gap-1 text-sm justify-center"
+            >
+              <CheckCircle2 className="h-4 w-4" /> Valid and ready to update.
+            </motion.p>
+          ) : (
+            <motion.p
+              key="hint"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="text-muted-foreground text-sm text-center"
+            >
+              Fill all required fields to save changes.
+            </motion.p>
+          )}
+        </AnimatePresence>
+        <div className="flex gap-3">
+          <Button
+            type="button"
+            variant="outline"
+            className="flex-1 bg-background border-border hover:text-foreground hover:border-foreground hover:bg-secondary/50 transition-all h-12 font-medium"
+            onClick={() => router.back()}
+            disabled={isUpdating}
+          >
+            Cancel
+          </Button>
+          <Button
+            type="submit"
+            className="flex-1 bg-foreground hover:bg-foreground/90 text-background font-medium h-12 transition-all"
+            disabled={isUpdating}
+          >
+            {isUpdating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            {isUpdating ? 'Saving...' : 'Save Changes'}
+          </Button>
+        </div>
+      </div>
+    </form>
+  );
+}
+
+interface SectionProps {
+  icon: React.ElementType;
+  title: string;
+  subtitle: string;
+  children: React.ReactNode;
+}
+
+function Section({ icon: Icon, title, subtitle, children }: SectionProps) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3 }}
+      className="border border-border rounded-xl p-6 space-y-5"
+    >
+      <div className="flex items-center gap-3">
+        <div className="w-10 h-10 rounded-full bg-accent/10 grid place-items-center">
+          <Icon className="h-5 w-5 text-accent" />
+        </div>
+
+        <div>
+          <h2 className="text-lg font-semibold text-foreground">{title}</h2>
+          <p className="text-sm text-muted-foreground">{subtitle}</p>
+        </div>
+      </div>
+
+      {children}
+    </motion.div>
+  );
+}
+
+interface PriceOptionProps {
+  label: string;
+  description: string;
+  selected: boolean;
+  onClick: () => void;
+}
+
+function PriceOption({ label, description, selected, onClick }: PriceOptionProps) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        'p-4 rounded-lg border transition-all text-left w-full',
+        selected ? 'border-accent bg-accent/10' : 'border-border hover:bg-secondary/30'
+      )}
+    >
+      <p className="font-medium">{label}</p>
+      <p className="text-sm text-muted-foreground">{description}</p>
+    </button>
+  );
+}
+
+function Error({ children }: { children: React.ReactNode }) {
+  return <p className="text-xs text-destructive mt-1">{children}</p>;
+}
