@@ -28,3 +28,5 @@ export const rejectJoinRequest = (eventId: string | number, profileId: string | 
   api.post(`/events/${eventId}/requests/${profileId}/reject`);
 
 export const cancelHostedEvent = (id: string | number) => api.patch(`/events/${id}/cancel`);
+export const updateEvent = (id: string | number, data: Partial<CreateEventPayload>) =>
+  api.patch(`/events/${id}`, data);

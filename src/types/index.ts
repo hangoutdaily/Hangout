@@ -8,6 +8,8 @@ export interface CreateEventPayload {
   datetime: string;
   maxAttendees: number;
   priceType: string;
+  geo?: { lat: number; lng: number } | null;
+  photos?: string[];
 }
 
 export interface HostedEvent {

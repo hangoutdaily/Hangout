@@ -18,6 +18,7 @@ import {
   Linkedin,
   Instagram,
   X as XIcon,
+  Edit,
 } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -402,13 +403,15 @@ export default function EventDetailClient({ id }: EventDetailClientProps) {
   const isPast = eventDate < new Date();
   const isFull = attendeesCount >= event.maxAttendees;
   const isCancelled = event.status === 'CANCELLED';
+  const isCompleted = event.status === 'COMPLETED';
+  const isEditable = isHost && !isCancelled && !isCompleted && !isPast;
 
   const ActionButton = () => (
     <Button
       size="lg"
       className={cn(
         'w-full font-medium text-base h-12 transition-all rounded-xl',
-        isCancelled || isPast
+        isCancelled || isPast || isCompleted
           ? 'bg-muted text-muted-foreground cursor-not-allowed hover:bg-muted'
           : requestStatus === 'JOINED'
             ? 'bg-green-600 hover:bg-green-700 text-white'
@@ -422,7 +425,7 @@ export default function EventDetailClient({ id }: EventDetailClientProps) {
           router.push('/login');
           return;
         }
-        if (isHost || isCancelled || isPast) return;
+        if (isHost || isCancelled || isPast || isCompleted) return;
         if (requestStatus === 'JOINED' || requestStatus === 'REQUESTED') setShowUnjoinDialog(true);
         else setShowJoinDialog(true);
       }}
@@ -432,8 +435,9 @@ export default function EventDetailClient({ id }: EventDetailClientProps) {
       ) : (
         <>
           {isCancelled && 'Hangout Cancelled'}
-          {!isCancelled && isPast && 'Hangout Ended'}
-          {!isCancelled && !isPast && (
+          {isCompleted && 'Hangout Completed'}
+          {!isCancelled && !isCompleted && isPast && 'Hangout Ended'}
+          {!isCancelled && !isCompleted && !isPast && (
             <>
               {requestStatus === 'JOINED' && (
                 <>
@@ -474,6 +478,19 @@ export default function EventDetailClient({ id }: EventDetailClientProps) {
             >
               <Share2 className="h-5 w-5" />
             </Button>
+            {isEditable && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="rounded-full hover:bg-secondary text-foreground/80 hover:text-foreground"
+                asChild
+                title="Edit Hangout"
+              >
+                <Link href={`/events/${event.id}/edit`}>
+                  <Edit className="h-5 w-5" />
+                </Link>
+              </Button>
+            )}
             <Button
               variant="ghost"
               size="icon"
@@ -770,14 +787,16 @@ export default function EventDetailClient({ id }: EventDetailClientProps) {
               <div className="w-full">
                 <ActionButton />
               </div>
-              {isHost && !isCancelled && !isPast && (
-                <Button
-                  variant="ghost"
-                  className="text-red-500 hover:text-red-700 hover:bg-red-50"
-                  onClick={() => setShowCancelDialog(true)}
-                >
-                  Cancel Hangout
-                </Button>
+              {isEditable && (
+                <div className="flex flex-col gap-2 w-full">
+                  <Button
+                    variant="ghost"
+                    className="text-red-500 hover:text-red-700 hover:bg-red-50 w-full"
+                    onClick={() => setShowCancelDialog(true)}
+                  >
+                    Cancel Hangout
+                  </Button>
+                </div>
               )}
             </div>
           </div>
