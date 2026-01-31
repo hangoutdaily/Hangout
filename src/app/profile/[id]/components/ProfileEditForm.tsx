@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import Image from 'next/image';
 import {
-  X,
+  ArrowLeft,
+  ArrowRight,
   Loader2,
   Camera,
   Film,
@@ -24,7 +25,11 @@ import {
   Twitter,
   Facebook,
   Linkedin,
+  X,
 } from 'lucide-react';
+import { getPresignedUrl, uploadFileToS3 } from '@/api/upload';
+import imageCompression from 'browser-image-compression';
+import { useRef, useState } from 'react';
 import { Button } from '@/components/ui/shadcn/button';
 import { Label } from '@/components/ui/shadcn/label';
 import { Field, FieldInput, FieldSelect, FieldTextarea } from '@/components/ui/FormField';
@@ -115,7 +120,7 @@ interface ProfileEditFormProps {
     value: string | number | string[] | Record<string, string>
   ) => void;
   onToggleList: (key: 'traits' | 'interests' | 'languages', item: string, limit?: number) => void;
-  onSave: () => void;
+  onSave: (data?: Partial<ProfileData>) => void;
   onCancel: () => void;
 }
 
@@ -128,12 +133,95 @@ export default function ProfileEditForm({
   onSave,
   onCancel,
 }: ProfileEditFormProps) {
-  const allPhotos = [formData.selfie, ...formData.photos].filter(Boolean);
-  const displayPhotos = allPhotos.length > 0 ? allPhotos.slice(0, 3) : [];
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Local state to manage photos (both existing S3 URLs and pending File objects)
+  const [localPhotos, setLocalPhotos] = useState<(string | File)[]>(formData.photos || []);
 
   const updateSocialLink = (id: string, value: string) => {
     const newSocials = { ...(formData.socialLinks || {}), [id]: value };
     onUpdateField('socialLinks', newSocials);
+  };
+
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+
+    e.target.value = '';
+
+    const remainingSlots = 4 - localPhotos.length;
+    if (remainingSlots <= 0) return;
+
+    const filesToProcess = files.slice(0, remainingSlots);
+
+    const validFiles = filesToProcess.filter((f) => f.type.startsWith('image/'));
+
+    setLocalPhotos((prev) => [...prev, ...validFiles]);
+  };
+
+  const removePhoto = (index: number) => {
+    setLocalPhotos((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const movePhoto = (index: number, direction: 'left' | 'right') => {
+    setLocalPhotos((prev) => {
+      const newPhotos = [...prev];
+      const targetIndex = direction === 'left' ? index - 1 : index + 1;
+
+      if (targetIndex >= 0 && targetIndex < newPhotos.length) {
+        [newPhotos[index], newPhotos[targetIndex]] = [newPhotos[targetIndex], newPhotos[index]];
+      }
+      return newPhotos;
+    });
+  };
+
+  const handleSaveWrapper = async () => {
+    if (localPhotos.length < 3) {
+      setLocalError('Upload at least 3 photos');
+      return;
+    }
+    setLocalError(null);
+
+    setUploading(true);
+    try {
+      const processPhotos = async () => {
+        return Promise.all(
+          localPhotos.map(async (photo) => {
+            if (typeof photo === 'string') return photo;
+            const options = { maxSizeMB: 1, maxWidthOrHeight: 1920, useWebWorker: true };
+            try {
+              const compressedFile = await imageCompression(photo, options);
+              if (compressedFile.size > 1024 * 1024) throw new Error('File too large');
+              const { uploadUrl, viewUrl } = await getPresignedUrl(
+                compressedFile.name,
+                compressedFile.type
+              );
+              await uploadFileToS3(uploadUrl, compressedFile);
+              return viewUrl;
+            } catch (err) {
+              console.error('Failed to upload image', err);
+              throw err;
+            }
+          })
+        );
+      };
+
+      const finalPhotos = await processPhotos();
+      onSave({ photos: finalPhotos });
+    } catch (err) {
+      console.error(err);
+      alert('Failed to upload images. Please try again.');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const [localError, setLocalError] = useState<string | null>(null);
+
+  const getPhotoSrc = (photo: string | File) => {
+    if (typeof photo === 'string') return photo;
+    return URL.createObjectURL(photo);
   };
 
   return (
@@ -188,28 +276,96 @@ export default function ProfileEditForm({
         </div>
       </div>
 
-      <div className="flex gap-4 overflow-x-auto pb-3 snap-x scrollbar-hide">
-        <div className="w-64 h-80 rounded-2xl bg-secondary border-2 border-dashed border-muted-foreground/20 flex flex-col items-center justify-center shrink-0 snap-center cursor-pointer hover:bg-secondary/80 transition-colors">
-          <Upload className="w-8 h-8 text-muted-foreground mb-2" />
-          <span className="text-sm font-medium">Add Photo</span>
+      <div className="space-y-4">
+        <Label>My Photos (Min 3)</Label>
+        <div className="flex gap-4 overflow-x-auto pb-3 snap-x scrollbar-hide">
+          <input
+            type="file"
+            ref={fileInputRef}
+            multiple
+            accept="image/*"
+            className="hidden"
+            onChange={handleFileSelect}
+          />
+          {Array.from({ length: 4 }).map((_, i) => {
+            const photo = localPhotos[i];
+            return (
+              <div
+                key={i}
+                className={cn(
+                  'w-64 aspect-[4/5] rounded-2xl overflow-hidden relative group border border-border transition-all flex-shrink-0 snap-center',
+                  !photo
+                    ? 'bg-secondary border-dashed border-2 border-muted-foreground/20 flex flex-col items-center justify-center cursor-pointer hover:bg-secondary/80'
+                    : 'bg-muted'
+                )}
+                onClick={() => !photo && !uploading && fileInputRef.current?.click()}
+              >
+                {photo ? (
+                  <>
+                    <Image
+                      src={getPhotoSrc(photo)}
+                      alt="Profile photo"
+                      width={300}
+                      height={500}
+                      className="object-cover w-full h-full"
+                    />
+                    <div className="absolute inset-0 bg-black/40 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity flex flex-col justify-between p-2">
+                      <div className="flex justify-end">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            removePhoto(i);
+                          }}
+                          className="p-1.5 bg-red-500/80 hover:bg-red-500 rounded-full text-white transition-colors"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                      <div className="flex justify-between items-end">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            movePhoto(i, 'left');
+                          }}
+                          disabled={i === 0}
+                          className={cn(
+                            'p-1.5 bg-background/80 hover:bg-background rounded-full text-foreground transition-colors disabled:opacity-0'
+                          )}
+                        >
+                          <ArrowLeft className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            movePhoto(i, 'right');
+                          }}
+                          disabled={i === localPhotos.length - 1}
+                          className={cn(
+                            'p-1.5 bg-background/80 hover:bg-background rounded-full text-foreground transition-colors disabled:opacity-0'
+                          )}
+                        >
+                          <ArrowRight className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  </>
+                ) : uploading ? (
+                  <Loader2 className="w-8 h-8 text-muted-foreground animate-spin" />
+                ) : (
+                  <>
+                    <Upload className="w-8 h-8 text-muted-foreground mb-2" />
+                    <span className="text-sm font-medium">Add Photo</span>
+                  </>
+                )}
+              </div>
+            );
+          })}
         </div>
-        {displayPhotos.map((src, i) => (
-          <div
-            key={i}
-            className="w-64 h-80 rounded-2xl overflow-hidden bg-muted flex-shrink-0 snap-center relative"
-          >
-            <Image
-              src={src || ''}
-              alt="Profile photo"
-              width={300}
-              height={500}
-              className="object-cover w-full h-full"
-            />
-            <button className="absolute top-2 right-2 p-1 bg-black/50 rounded-full text-white">
-              <X className="w-4 h-4" />
-            </button>
-          </div>
-        ))}
+        {(localError || formErrors.photos) && (
+          <p className="text-sm text-destructive font-medium mt-2">
+            {localError || formErrors.photos}
+          </p>
+        )}
       </div>
 
       <section className="space-y-3">
@@ -416,17 +572,17 @@ export default function ProfileEditForm({
         <Button
           variant="outline"
           onClick={onCancel}
-          disabled={isSaving}
+          disabled={isSaving || uploading}
           className="w-full  flex-1 bg-background border-border hover:text-foreground hover:border-foreground hover:bg-secondary/50 transition-all h-12 font-medium"
         >
           Cancel
         </Button>
         <Button
-          onClick={onSave}
-          disabled={isSaving}
+          onClick={handleSaveWrapper}
+          disabled={isSaving || uploading}
           className="w-full flex-1 bg-foreground hover:bg-foreground/90 text-background font-medium h-12 transition-all"
         >
-          {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+          {(isSaving || uploading) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
           Done
         </Button>
       </div>
