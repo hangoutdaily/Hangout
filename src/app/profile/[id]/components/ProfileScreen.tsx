@@ -176,8 +176,13 @@ export default function ProfileScreen({ id }: ProfileScreenProps) {
     return Object.keys(errors).length === 0;
   };
 
-  const handleSave = async () => {
-    if (!formData) return;
+  const handleSave = async (dataOverride?: Partial<ProfileData>) => {
+    const dataToSave = dataOverride && formData ? { ...formData, ...dataOverride } : formData;
+
+    if (!dataToSave) return;
+
+    setFormData(dataToSave);
+
     if (!validateForm()) {
       window.scrollTo({ top: 0, behavior: 'smooth' });
       return;
@@ -185,12 +190,9 @@ export default function ProfileScreen({ id }: ProfileScreenProps) {
 
     setIsSaving(true);
     try {
-      const payload = {
-        ...formData,
-        age: Number(formData.age),
-      };
-      await updateProfile(payload);
-      setProfile(formData);
+      await updateProfile({ ...dataToSave, age: Number(dataToSave.age) });
+      setProfile(dataToSave);
+      setFormData(dataToSave);
       setIsEditing(false);
     } catch {
       alert('Failed to save profile changes.');

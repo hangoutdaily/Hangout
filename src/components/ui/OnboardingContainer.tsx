@@ -9,10 +9,13 @@ import { useRouter } from 'next/navigation';
 import { NavigationControls } from './NavigationControls';
 import { ProfileData } from '@/types';
 import { createProfile } from '@/api/profile';
+import { getPresignedUrl, uploadFileToS3 } from '@/api/upload';
 
 export function OnboardingContainer() {
   const [currentScreen, setCurrentScreen] = useState(0);
   const [hasAttemptedSubmit, setHasAttemptedSubmit] = useState(false);
+  const [pendingFiles, setPendingFiles] = useState<File[]>([]);
+  const [uploadedUrls, setUploadedUrls] = useState<string[]>([]);
   const [formData, setFormData] = useState<Partial<ProfileData>>({
     // Screen 1
     name: '',
@@ -74,7 +77,9 @@ export function OnboardingContainer() {
       if (!data.drinks) errors.drinks = 'Please select an option';
       if (!data.smoke) errors.smoke = 'Please select an option';
       if (!data.weed) errors.weed = 'Please select an option';
-      if ((data.photos || []).length < 3) errors.photos = 'Upload at least 3 photos';
+
+      const totalPhotos = (data.photos || []).length + pendingFiles.length;
+      if (totalPhotos < 3) errors.photos = 'Upload at least 3 photos';
       if (!data.selfie) errors.selfie = 'Selfie verification is required';
     }
 
@@ -117,9 +122,26 @@ export function OnboardingContainer() {
 
   const handleSubmit = async () => {
     try {
-      // For now ignoring photos upload
+      const finalPhotoUrls = [...(formData.photos || [])];
+
+      if (pendingFiles.length > 0) {
+        await Promise.all(
+          pendingFiles.map(async (file) => {
+            try {
+              const { uploadUrl, viewUrl } = await getPresignedUrl(file.name, file.type);
+              await uploadFileToS3(uploadUrl, file);
+              finalPhotoUrls.push(viewUrl);
+            } catch (e) {
+              console.error('Failed to upload file', file.name, e);
+              // Continues with others? or fails? simpler to continue.
+            }
+          })
+        );
+      }
+
       const payload = {
         ...formData,
+        photos: finalPhotoUrls,
         age: Number(formData.age),
         traits: Array.from(formData.traits || []),
         interests: Array.from(formData.interests || []),
@@ -127,7 +149,10 @@ export function OnboardingContainer() {
       };
       await createProfile(payload);
       router.push('/');
-    } catch (err) {}
+    } catch (err) {
+      console.error('Submit failed', err);
+      alert('Something went wrong during submission.');
+    }
   };
 
   const screens = [
@@ -148,6 +173,8 @@ export function OnboardingContainer() {
       data={formData}
       onChange={handleFormChange}
       errors={validationErrors}
+      pendingFiles={pendingFiles}
+      onPendingFilesChange={setPendingFiles}
     />,
   ];
 

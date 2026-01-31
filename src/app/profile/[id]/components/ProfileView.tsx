@@ -1,3 +1,4 @@
+import React, { useState, useEffect } from 'react';
 import {
   MapPin,
   Heart,
@@ -32,6 +33,9 @@ import {
   Frame,
   Mountain,
   UtensilsCrossed,
+  X,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
 import Image from 'next/image';
 import { cn } from '@/lib/utils';
@@ -222,15 +226,34 @@ export default function ProfileView({
   likedEventIds,
   handleLike,
 }: ProfileViewProps) {
+  const [selectedPhotoIndex, setSelectedPhotoIndex] = useState<number | null>(null);
+
   const allPhotos = [profile.selfie, ...profile.photos].filter(Boolean);
   const displayPhotos =
     allPhotos.length > 0
-      ? allPhotos.slice(0, 3)
+      ? allPhotos
       : [
           'https://images.unsplash.com/photo-1552058544-f2b08422138a?q=80',
           'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80',
           'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?q=80',
         ];
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setSelectedPhotoIndex(null);
+      if (selectedPhotoIndex === null) return;
+
+      if (e.key === 'ArrowLeft') {
+        setSelectedPhotoIndex((prev) => (prev !== null && prev > 0 ? prev - 1 : prev));
+      } else if (e.key === 'ArrowRight') {
+        setSelectedPhotoIndex((prev) =>
+          prev !== null && prev < displayPhotos.length - 1 ? prev + 1 : prev
+        );
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [selectedPhotoIndex, displayPhotos.length]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -245,9 +268,10 @@ export default function ProfileView({
 
         <div className="flex gap-4 overflow-x-auto pb-3 snap-x scrollbar-hide">
           {displayPhotos.map((src, i) => (
-            <div
+            <button
               key={i}
-              className="w-64 h-80 rounded-2xl overflow-hidden bg-muted flex-shrink-0 snap-center"
+              onClick={() => setSelectedPhotoIndex(i)}
+              className="w-64 md:w-auto h-80 md:aspect-[4/5] md:h-auto rounded-2xl overflow-hidden bg-muted flex-shrink-0 snap-center relative group cursor-zoom-in transition-transform active:scale-[0.98]"
             >
               <Image
                 src={src || ''}
@@ -256,7 +280,8 @@ export default function ProfileView({
                 height={500}
                 className="object-cover w-full h-full"
               />
-            </div>
+              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
+            </button>
           ))}
         </div>
 
@@ -453,6 +478,63 @@ export default function ProfileView({
       {activeTab === 'reviews' && (
         <div className="max-w-3xl mx-auto px-4 pb-16">
           <ReviewsSection reviews={DUMMY_REVIEWS} />
+        </div>
+      )}
+
+      {/* Lightbox */}
+      {selectedPhotoIndex !== null && (
+        <div
+          className="fixed inset-0 z-[100] bg-background/95 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200"
+          onClick={() => setSelectedPhotoIndex(null)}
+        >
+          <button
+            onClick={() => setSelectedPhotoIndex(null)}
+            className="absolute top-4 right-4 p-2 rounded-full bg-secondary/50 hover:bg-secondary text-foreground transition-colors"
+          >
+            <X className="w-6 h-6" />
+          </button>
+
+          <div
+            className="relative max-w-5xl max-h-[90vh] w-full h-full flex items-center justify-center outline-none"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {displayPhotos[selectedPhotoIndex] && (
+              <Image
+                src={displayPhotos[selectedPhotoIndex]!}
+                alt="Enlarged profile photo"
+                fill
+                className="object-contain"
+                priority
+              />
+            )}
+          </div>
+
+          {displayPhotos.length > 1 && (
+            <>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setSelectedPhotoIndex((prev) => (prev !== null && prev > 0 ? prev - 1 : prev));
+                }}
+                disabled={selectedPhotoIndex === 0}
+                className="absolute left-4 top-1/2 -translate-y-1/2 p-3 rounded-full bg-secondary/50 hover:bg-secondary text-foreground transition-colors disabled:opacity-0"
+              >
+                <ChevronLeft className="w-8 h-8" />
+              </button>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setSelectedPhotoIndex((prev) =>
+                    prev !== null && prev < displayPhotos.length - 1 ? prev + 1 : prev
+                  );
+                }}
+                disabled={selectedPhotoIndex === displayPhotos.length - 1}
+                className="absolute right-4 top-1/2 -translate-y-1/2 p-3 rounded-full bg-secondary/50 hover:bg-secondary text-foreground transition-colors disabled:opacity-0"
+              >
+                <ChevronRight className="w-8 h-8" />
+              </button>
+            </>
+          )}
         </div>
       )}
     </div>
