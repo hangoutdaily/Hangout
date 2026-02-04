@@ -91,6 +91,7 @@ type Attendee = {
   age?: number;
   gender?: string;
   displayId?: string;
+  photos?: string[];
 };
 
 type EventDetail = {
@@ -111,6 +112,7 @@ type EventDetail = {
     selfie: string | null;
     bio: string | null;
     displayId: string | null;
+    photos?: string[];
   };
   attendees: Attendee[];
   status: 'UPCOMING' | 'COMPLETED' | 'CANCELLED';
@@ -124,6 +126,7 @@ type JoinRequest = {
     name: string;
     selfie: string | null;
     displayId: string | null;
+    photos?: string[];
   };
 };
 
@@ -460,8 +463,9 @@ export default function EventDetailClient({ id }: EventDetailClientProps) {
 
   return (
     <div className="min-h-screen bg-background pb-32">
-      <nav className="absolute top-14 md:top-16 left-0 right-0 z-50 h-16 px-4 lg:px-8 pointer-events-none">
-        <div className="max-w-4xl mx-auto w-full h-full flex items-center justify-between pointer-events-auto">
+      {/* Navbar - Restored to match original spacing/flow, removing fixed/blur that might block global header */}
+      <nav className="w-full z-50 h-16 px-4 lg:px-8 mt-4">
+        <div className="max-w-7xl mx-auto w-full h-full flex items-center justify-between">
           <Link
             href="/"
             className="p-2 -ml-2 hover:bg-secondary rounded-full transition-colors text-foreground/80 hover:text-foreground"
@@ -508,86 +512,87 @@ export default function EventDetailClient({ id }: EventDetailClientProps) {
         </div>
       </nav>
 
-      <div className="w-full h-[42vh] md:h-[48vh] lg:h-[420px] relative bg-muted overflow-hidden">
-        <Image
-          src={coverImage}
-          alt={event.title}
-          fill
-          className="object-cover object-[center_30%] md:object-[center_25%] transition-transform hover:scale-105 duration-700"
-          priority
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/10 to-transparent" />
+      <main className="max-w-7xl mx-auto px-4 lg:px-8 pt-8 space-y-12">
+        {/* Top Split Section */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-16 items-start">
+          {/* Left Column: Image */}
+          <div className="relative aspect-square w-full rounded-3xl overflow-hidden shadow-sm border border-border bg-muted">
+            <Image
+              src={coverImage}
+              alt={event.title}
+              fill
+              className="object-cover transition-transform hover:scale-105 duration-700"
+              priority
+            />
+          </div>
 
-        <div className="absolute bottom-0 left-0 right-0 p-4 lg:p-8">
-          <div className="max-w-4xl mx-auto w-full">
-            <div className="flex flex-wrap gap-2 mb-3">
-              <Badge
-                variant="secondary"
-                className="bg-background/90 backdrop-blur-md text-foreground border-none font-medium px-3 py-1"
-              >
-                <Sparkles className="w-3 h-3 mr-1.5 text-yellow-500" />
-                {formatCategory(event.category)}
-              </Badge>
-              {isCancelled && (
-                <Badge variant="destructive" className="font-medium px-3 py-1">
-                  Called Off
-                </Badge>
-              )}
-              {!isCancelled && isPast && (
+          {/* Right Column: Details (Restored Original Designs) */}
+          <div className="space-y-8">
+            {/* Header / Badges */}
+            <div className="space-y-4">
+              <div className="flex flex-wrap gap-2 mb-3">
                 <Badge
                   variant="secondary"
-                  className="bg-muted text-muted-foreground font-medium px-3 py-1"
+                  className="bg-background/90 backdrop-blur-md text-foreground border-none font-medium px-3 py-1"
                 >
-                  Done
+                  <Sparkles className="w-3 h-3 mr-1.5 text-yellow-500" />
+                  {formatCategory(event.category)}
                 </Badge>
-              )}
-              {!isCancelled && !isPast && isFull && (
-                <Badge variant="destructive" className="bg-red-500 font-medium px-3 py-1">
-                  FULL
-                </Badge>
-              )}
+                {isCancelled && (
+                  <Badge variant="destructive" className="font-medium px-3 py-1">
+                    Called Off
+                  </Badge>
+                )}
+                {!isCancelled && isPast && (
+                  <Badge
+                    variant="secondary"
+                    className="bg-muted text-muted-foreground font-medium px-3 py-1"
+                  >
+                    Done
+                  </Badge>
+                )}
+                {!isCancelled && !isPast && isFull && (
+                  <Badge variant="destructive" className="bg-red-500 font-medium px-3 py-1">
+                    FULL
+                  </Badge>
+                )}
+              </div>
+              <h1 className="text-3xl md:text-5xl font-medium tracking-tight text-foreground drop-shadow-sm">
+                {event.title}
+              </h1>
             </div>
-            <h1 className="text-3xl md:text-5xl font-medium tracking-tight text-foreground drop-shadow-sm">
-              {event.title}
-            </h1>
-          </div>
-        </div>
-      </div>
 
-      <div className="max-w-4xl mx-auto px-4 lg:px-8 mt-10">
-        <div className="space-y-12">
-          <div className="w-full space-y-12">
-            <section className="space-y-4">
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                <div className="bg-secondary/20 rounded-2xl p-4 border border-border flex items-center justify-start gap-3 h-auto hover:bg-secondary/40 transition-colors group">
-                  <Calendar className="h-5 w-5 text-foreground shrink-0" />
-                  <p className="text-lg font-medium tracking-tight text-foreground">
-                    {eventDate.toLocaleDateString('en-US', { day: 'numeric', month: 'short' })}
+            {/* Info Grid (Restored) */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="bg-secondary/20 rounded-2xl p-4 border border-border flex items-center justify-start gap-3 h-auto hover:bg-secondary/40 transition-colors group">
+                <Calendar className="h-5 w-5 text-foreground shrink-0" />
+                <p className="text-lg font-medium tracking-tight text-foreground">
+                  {eventDate.toLocaleDateString('en-US', { day: 'numeric', month: 'short' })}
+                </p>
+              </div>
+
+              <div className="bg-secondary/20 rounded-2xl p-4 border border-border flex items-center justify-start gap-3 h-auto hover:bg-secondary/40 transition-colors group">
+                <Clock className="h-5 w-5 text-foreground shrink-0" />
+                <p className="text-lg font-medium tracking-tight text-foreground">
+                  {eventDate.toLocaleTimeString('en-US', {
+                    hour: 'numeric',
+                    minute: '2-digit',
+                    hour12: true,
+                  })}
+                </p>
+              </div>
+
+              <div className="col-span-2 bg-secondary/20 rounded-2xl p-4 border border-border flex items-start gap-3 hover:bg-secondary/40 transition-colors">
+                <MapPin className="h-5 w-5 text-foreground mt-0.5" />
+                <div className="w-full">
+                  <p className="text-lg tracking-tight text-foreground leading-tight">
+                    {event.city}
                   </p>
-                </div>
-
-                <div className="bg-secondary/20 rounded-2xl p-4 border border-border flex items-center justify-start gap-3 h-auto hover:bg-secondary/40 transition-colors group">
-                  <Clock className="h-5 w-5 text-foreground shrink-0" />
-                  <p className="text-lg font-medium tracking-tight text-foreground">
-                    {eventDate.toLocaleTimeString('en-US', {
-                      hour: 'numeric',
-                      minute: '2-digit',
-                      hour12: true,
-                    })}
-                  </p>
-                </div>
-
-                <div className="col-span-2 md:col-span-1 bg-secondary/20 rounded-2xl p-4 border border-border flex items-start gap-3 hover:bg-secondary/40 transition-colors">
-                  <MapPin className="h-5 w-5 text-foreground mt-0.5" />
-                  <div className="w-full">
-                    <p className="text-lg tracking-tight text-foreground leading-tight">
-                      {event.city}
-                    </p>
-                  </div>
                 </div>
               </div>
-            </section>
+            </div>
 
+            {/* Description (Restored) */}
             <div className="prose dark:prose-invert max-w-none">
               <h2 className="text-2xl font-medium tracking-tight text-foreground mb-4">
                 About the hangout
@@ -596,6 +601,7 @@ export default function EventDetailClient({ id }: EventDetailClientProps) {
                 {event.description}
               </p>
 
+              {/* Cost & Spots (Restored) */}
               <div className="mt-3 pt-4 border-border/60">
                 <div className="flex w-full items-center justify-between">
                   <div>
@@ -617,191 +623,200 @@ export default function EventDetailClient({ id }: EventDetailClientProps) {
                 </div>
               </div>
             </div>
-
-            {isLoaded && event.geo && (
-              <section className="space-y-4">
-                <h2 className="text-2xl font-medium tracking-tight text-foreground">
-                  Where we&apos;ll meet
-                </h2>
-                <div className="w-full h-[300px] rounded-2xl overflow-hidden border border-border">
-                  <GoogleMap
-                    mapContainerStyle={MAP_CONTAINER_STYLE}
-                    center={event.geo}
-                    zoom={15}
-                    options={{
-                      disableDefaultUI: true,
-                      zoomControl: true,
-                    }}
-                  >
-                    <Marker position={event.geo} />
-                  </GoogleMap>
-                </div>
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <MapPin className="w-4 h-4" />
-                  <span>
-                    {event.addressLine}, {event.city}
-                  </span>
-                  <a
-                    href={`https://www.google.com/maps/search/?api=1&query=${event.geo.lat},${event.geo.lng}`}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="ml-auto text-primary underline hover:no-underline font-medium"
-                  >
-                    Get Directions
-                  </a>
-                </div>
-              </section>
-            )}
-
-            <Separator className="bg-border/60" />
-
-            <section className="space-y-5">
-              <h2 className="text-2xl font-medium tracking-tight text-foreground">
-                Meet your host
-              </h2>
-
-              <Link
-                href={event.host.displayId ? `/profile/${event.host.displayId}` : '#'}
-                className="flex items-start gap-5 p-6 rounded-3xl border border-border bg-card/50 hover:bg-card hover:shadow-sm transition-all w-full"
-              >
-                <div className="relative shrink-0">
-                  <Avatar className="h-20 w-20 border-2 border-background shadow-md">
-                    <AvatarImage src={event.host.selfie || ''} className="object-cover" />
-                    <AvatarFallback className="text-xl bg-muted text-muted-foreground">
-                      {event.host.name?.charAt(0) || 'H'}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 bg-foreground text-background text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">
-                    Host
-                  </div>
-                </div>
-
-                <div className="space-y-2 pt-1">
-                  <h3 className="text-lg font-semibold text-foreground">
-                    {event.host.name || 'Anonymous Host'}
-                  </h3>
-                  <p className="text-sm text-muted-foreground leading-relaxed">
-                    {event.host.bio
-                      ? event.host.bio
-                      : `Hi! I'm ${event.host.name}. I love creating spaces for people to connect and share good vibes. Can't wait to see you there!`}
-                  </p>
-                  <div className="flex gap-2 pt-1">
-                    <Badge
-                      variant="outline"
-                      className="text-xs font-normal text-muted-foreground rounded-full border-border/60 bg-transparent"
-                    >
-                      <ShieldCheck className="w-3 h-3 mr-1" /> Identity Verified
-                    </Badge>
-                  </div>
-                </div>
-              </Link>
-            </section>
-
-            {event.attendees.length > 0 && (
-              <section className="space-y-5">
-                <div className="flex items-center justify-between">
-                  <h2 className="text-2xl font-medium tracking-tight text-foreground">
-                    Who&apos;s going
-                  </h2>
-                  <p className="text-sm text-muted-foreground font-medium">
-                    {attendeesCount} / {event.maxAttendees} Joined
-                  </p>
-                </div>
-                <div className="flex flex-wrap gap-4">
-                  {event.attendees.map((attendee) => (
-                    <Link
-                      key={attendee.id}
-                      href={attendee.displayId ? `/profile/${attendee.displayId}` : '#'}
-                      className="group flex flex-col items-center gap-2 w-16 cursor-pointer"
-                    >
-                      <Avatar className="h-16 w-16 border-2 border-transparent group-hover:border-foreground transition-all">
-                        <AvatarImage src={attendee.selfie || ''} />
-                        <AvatarFallback>{attendee.name[0]}</AvatarFallback>
-                      </Avatar>
-                      <p className="text-xs text-muted-foreground group-hover:text-foreground transition-colors truncate w-full text-center">
-                        {attendee.name.split(' ')[0]}
-                      </p>
-                    </Link>
-                  ))}
-                </div>
-              </section>
-            )}
-
-            {isHost && joinRequests.length > 0 && (
-              <section className="space-y-4 pt-4 border-t border-border/60">
-                <div className="flex items-center justify-between">
-                  <h2 className="text-xl font-medium tracking-tight">Join Requests</h2>
-                  <Badge variant="destructive" className="rounded-full px-3">
-                    {joinRequests.length}
-                  </Badge>
-                </div>
-
-                <div className="grid gap-3">
-                  <AnimatePresence>
-                    {joinRequests.map((req) => (
-                      <motion.div
-                        key={req.id}
-                        initial={{ opacity: 0, height: 0 }}
-                        animate={{ opacity: 1, height: 'auto' }}
-                        exit={{ opacity: 0, height: 0 }}
-                        className="p-4 rounded-xl border border-border bg-card flex flex-col sm:flex-row sm:items-start justify-between gap-4"
-                      >
-                        <div className="flex items-start gap-3 w-full">
-                          <Avatar className="shrink-0">
-                            <AvatarImage src={req.profile.selfie || ''} />
-                            <AvatarFallback>{req.profile.name[0]}</AvatarFallback>
-                          </Avatar>
-                          <div className="space-y-1 w-full">
-                            <p className="font-medium text-sm">{req.profile.name}</p>
-                            <p className="text-sm text-muted-foreground whitespace-pre-wrap leading-relaxed">
-                              {req.message}
-                            </p>
-                          </div>
-                        </div>
-                        <div className="flex gap-2 shrink-0 self-end sm:self-start">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="h-8 px-3 rounded-lg text-xs"
-                            asChild
-                          >
-                            <Link href={`/profile/${req.profile.displayId}`}>View Profile</Link>
-                          </Button>
-                          <Button
-                            size="sm"
-                            className="h-8 px-3 rounded-lg text-xs"
-                            disabled={isCancelled}
-                            onClick={() => handleHostAction(req.profile.id, 'approve')}
-                          >
-                            Approve
-                          </Button>
-                        </div>
-                      </motion.div>
-                    ))}
-                  </AnimatePresence>
-                </div>
-              </section>
-            )}
-
-            <div className="flex flex-col gap-4 justify-center pt-8 pb-12">
-              <div className="w-full">
-                <ActionButton />
-              </div>
-              {isEditable && (
-                <div className="flex flex-col gap-2 w-full">
-                  <Button
-                    variant="ghost"
-                    className="text-red-500 hover:text-red-700 hover:bg-red-50 w-full"
-                    onClick={() => setShowCancelDialog(true)}
-                  >
-                    Cancel Hangout
-                  </Button>
-                </div>
-              )}
-            </div>
           </div>
         </div>
-      </div>
+
+        {/* Bottom Section: Map, Host, Attendees etc. */}
+        <div className="space-y-16 w-full">
+          {isLoaded && event.geo && (
+            <section className="space-y-4">
+              <h2 className="text-2xl font-medium tracking-tight text-foreground">
+                Where we&apos;ll meet
+              </h2>
+              <div className="w-full h-[300px] rounded-2xl overflow-hidden border border-border opacity-90 hover:opacity-100 transition-opacity">
+                <GoogleMap
+                  mapContainerStyle={MAP_CONTAINER_STYLE}
+                  center={event.geo}
+                  zoom={15}
+                  options={{
+                    disableDefaultUI: true,
+                    zoomControl: true,
+                  }}
+                >
+                  <Marker position={event.geo} />
+                </GoogleMap>
+              </div>
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <MapPin className="w-4 h-4" />
+                <span>
+                  {event.addressLine}, {event.city}
+                </span>
+                <a
+                  href={`https://www.google.com/maps/search/?api=1&query=${event.geo.lat},${event.geo.lng}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="ml-auto text-primary underline hover:no-underline font-medium"
+                >
+                  Get Directions
+                </a>
+              </div>
+            </section>
+          )}
+
+          <section className="space-y-5">
+            <h2 className="text-2xl font-medium tracking-tight text-foreground">Meet your host</h2>
+
+            <Link
+              href={event.host.displayId ? `/profile/${event.host.displayId}` : '#'}
+              className="flex items-start gap-5 p-6 rounded-3xl border border-border bg-card/40 hover:bg-card/80 hover:shadow-sm transition-all w-full"
+            >
+              <div className="relative shrink-0">
+                <Avatar className="h-20 w-20 border-2 border-background shadow-md">
+                  <AvatarImage
+                    src={event.host.photos?.[0] || event.host.selfie || ''}
+                    className="object-cover"
+                  />
+                  <AvatarFallback className="text-xl bg-muted text-muted-foreground">
+                    {event.host.name?.charAt(0) || 'H'}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 bg-foreground text-background text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">
+                  Host
+                </div>
+              </div>
+
+              <div className="space-y-2 pt-1">
+                <h3 className="text-lg font-semibold text-foreground">
+                  {event.host.name || 'Anonymous Host'}
+                </h3>
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  {event.host.bio
+                    ? event.host.bio
+                    : `Hi! I'm ${event.host.name}. I love creating spaces for people to connect and share good vibes. Can't wait to see you there!`}
+                </p>
+                <div className="flex gap-2 pt-1">
+                  <Badge
+                    variant="outline"
+                    className="text-xs font-normal text-muted-foreground rounded-full border-border/60 bg-transparent"
+                  >
+                    <ShieldCheck className="w-3 h-3 mr-1" /> Identity Verified
+                  </Badge>
+                </div>
+              </div>
+            </Link>
+          </section>
+
+          {event.attendees.length > 0 && (
+            <section className="space-y-5">
+              <div className="flex items-center justify-between">
+                <h2 className="text-2xl font-medium tracking-tight text-foreground">
+                  Who&apos;s going
+                </h2>
+                <p className="text-sm text-muted-foreground font-medium">
+                  {attendeesCount} / {event.maxAttendees} Joined
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-4">
+                {event.attendees.map((attendee) => (
+                  <Link
+                    key={attendee.id}
+                    href={attendee.displayId ? `/profile/${attendee.displayId}` : '#'}
+                    className="group flex flex-col items-center gap-2 w-16 cursor-pointer"
+                  >
+                    <Avatar className="h-16 w-16 border-2 border-transparent group-hover:border-foreground transition-all">
+                      <AvatarImage
+                        src={attendee.photos?.[0] || attendee.selfie || ''}
+                        className="object-cover"
+                      />
+                      <AvatarFallback>{attendee.name[0]}</AvatarFallback>
+                    </Avatar>
+                    <p className="text-xs text-muted-foreground group-hover:text-foreground transition-colors truncate w-full text-center">
+                      {attendee.name.split(' ')[0]}
+                    </p>
+                  </Link>
+                ))}
+              </div>
+            </section>
+          )}
+
+          {isHost && joinRequests.length > 0 && (
+            <section className="space-y-4 pt-4 border-t border-border/60">
+              <div className="flex items-center justify-between">
+                <h2 className="text-xl font-medium tracking-tight">Join Requests</h2>
+                <Badge variant="destructive" className="rounded-full px-3">
+                  {joinRequests.length}
+                </Badge>
+              </div>
+
+              <div className="grid gap-3">
+                <AnimatePresence>
+                  {joinRequests.map((req) => (
+                    <motion.div
+                      key={req.id}
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      exit={{ opacity: 0, height: 0 }}
+                      className="p-4 rounded-xl border border-border bg-card flex flex-col sm:flex-row sm:items-start justify-between gap-4"
+                    >
+                      <div className="flex items-start gap-3 w-full">
+                        <Avatar className="shrink-0">
+                          <AvatarImage
+                            src={req.profile.photos?.[0] || req.profile.selfie || ''}
+                            className="object-cover"
+                          />
+                          <AvatarFallback>{req.profile.name[0]}</AvatarFallback>
+                        </Avatar>
+                        <div className="space-y-1 w-full">
+                          <p className="font-medium text-sm">{req.profile.name}</p>
+                          <p className="text-sm text-muted-foreground whitespace-pre-wrap leading-relaxed">
+                            {req.message}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex gap-2 shrink-0 self-end sm:self-start">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-8 px-3 rounded-lg text-xs"
+                          asChild
+                        >
+                          <Link href={`/profile/${req.profile.displayId}`}>View Profile</Link>
+                        </Button>
+                        <Button
+                          size="sm"
+                          className="h-8 px-3 rounded-lg text-xs"
+                          disabled={isCancelled}
+                          onClick={() => handleHostAction(req.profile.id, 'approve')}
+                        >
+                          Approve
+                        </Button>
+                      </div>
+                    </motion.div>
+                  ))}
+                </AnimatePresence>
+              </div>
+            </section>
+          )}
+
+          {/* CTA Buttons - Moved to Bottom */}
+          <div className="flex flex-col gap-4 justify-center pt-8 pb-12 items-center">
+            <div className="w-full max-w-md">
+              <ActionButton />
+            </div>
+            {isEditable && (
+              <div className="flex flex-col gap-2 w-full max-w-md">
+                <Button
+                  variant="ghost"
+                  className="text-red-500 hover:text-red-700 hover:bg-red-50 w-full"
+                  onClick={() => setShowCancelDialog(true)}
+                >
+                  Cancel Hangout
+                </Button>
+              </div>
+            )}
+          </div>
+        </div>
+      </main>
 
       <Dialog open={isShareOpen} onOpenChange={setIsShareOpen}>
         <DialogContent className="sm:max-w-md bg-background border-border">
