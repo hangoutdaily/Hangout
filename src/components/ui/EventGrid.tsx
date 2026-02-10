@@ -39,6 +39,7 @@ type FetchedEvent = {
     id: number;
     name: string | null;
     selfie: string | null;
+    photos: string[] | null;
   };
   _count: {
     attendees: number;
@@ -200,7 +201,8 @@ export default function EventGrid() {
               priceType={event.priceType.toLowerCase() as 'free' | 'split_bill'}
               creator={{
                 name: event.host?.name || 'Hangout Host',
-                avatar: event.host?.selfie || 'https://i.pravatar.cc/40?img=1',
+                avatar:
+                  event.host?.photos?.[0] || event.host?.selfie || 'https://i.pravatar.cc/40?img=1',
               }}
               isLiked={likedEvents.has(idStr)}
               status={status}
