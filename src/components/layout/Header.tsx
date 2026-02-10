@@ -207,8 +207,16 @@ export default function Header() {
               className="relative flex items-center gap-2 p-1 rounded-lg hover:bg-accent/10 transition"
             >
               <Avatar>
-                <AvatarImage src={user?.profile?.selfie || 'https://i.pravatar.cc/40'} />
-                <AvatarFallback>{user?.email?.charAt(0) || 'U'}</AvatarFallback>
+                <AvatarImage
+                  src={
+                    user?.profile?.photos?.[0] ||
+                    user?.profile?.selfie ||
+                    'https://i.pravatar.cc/40'
+                  }
+                />
+                <AvatarFallback>
+                  {(user?.profile?.name || user?.email)?.charAt(0) || 'U'}
+                </AvatarFallback>
               </Avatar>
             </button>
           ) : (
@@ -220,14 +228,24 @@ export default function Header() {
             <div className="absolute right-0 top-14 w-64 bg-popover border border-border rounded-lg shadow-md z-50 animate-in fade-in slide-in-from-top-2">
               <div className="p-4 border-b border-border flex items-center gap-3">
                 <Avatar>
-                  <AvatarImage src={user?.profile?.selfie || 'https://i.pravatar.cc/40'} />
-                  <AvatarFallback>{user?.email?.charAt(0) || 'U'}</AvatarFallback>
+                  <AvatarImage
+                    src={
+                      user?.profile?.photos?.[0] ||
+                      user?.profile?.selfie ||
+                      'https://i.pravatar.cc/40'
+                    }
+                  />
+                  <AvatarFallback>
+                    {(user?.profile?.name || user?.email)?.charAt(0) || 'U'}
+                  </AvatarFallback>
                 </Avatar>
-                <div>
-                  <p className="font-medium text-popover-foreground">
+                <div className="min-w-0">
+                  <p className="font-medium text-popover-foreground truncate">
+                    {user?.profile?.name || user?.email || user?.phone}
+                  </p>
+                  <p className="text-sm text-muted-foreground truncate">
                     {user?.email || user?.phone}
                   </p>
-                  <p className="text-sm text-muted-foreground">{user?.email || user?.phone}</p>
                 </div>
               </div>
               <div className="p-4 space-y-3">

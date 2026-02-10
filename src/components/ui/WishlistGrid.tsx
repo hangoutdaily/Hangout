@@ -36,6 +36,7 @@ type FetchedEvent = {
   host: {
     name: string | null;
     selfie: string | null;
+    photos: string[] | null;
     id: number;
   };
   _count: {
@@ -344,7 +345,8 @@ export default function MyHangoutsGrid() {
               priceType: event.priceType.toLowerCase() as 'free' | 'split_bill',
               creator: {
                 name: event.host?.name || 'Hangout Host',
-                avatar: event.host?.selfie || 'https://i.pravatar.cc/40?img=1',
+                avatar:
+                  event.host?.photos?.[0] || event.host?.selfie || 'https://i.pravatar.cc/40?img=1',
               },
             };
 
