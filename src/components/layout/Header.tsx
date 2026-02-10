@@ -23,6 +23,7 @@ import { cn } from '@/lib/utils';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/shadcn/avatar';
 import { AuthContext } from '@/context/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
+import MobileNav from './MobileNav';
 
 export default function Header() {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
@@ -291,25 +292,7 @@ export default function Header() {
         </div>
       )}
 
-      <nav className="fixed bottom-0 left-0 right-0 border-t border-border bg-background md:hidden z-40">
-        <div className="flex justify-between items-center h-16 max-w-[500px] mx-auto w-full px-2 sm:px-4">
-          {mobileNav.map(({ href, label, icon: Icon }) => (
-            <Link
-              key={href}
-              href={href}
-              className={cn(
-                'flex flex-col items-center justify-center flex-1 text-xs py-2 transition',
-                pathname === href
-                  ? 'text-foreground'
-                  : 'text-muted-foreground hover:text-foreground'
-              )}
-            >
-              <Icon className="h-5 w-5 mb-1 shrink-0" />
-              <span className="truncate text-[11px]">{label}</span>
-            </Link>
-          ))}
-        </div>
-      </nav>
+      <MobileNav />
     </header>
   );
 }
