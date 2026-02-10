@@ -2,9 +2,10 @@
 
 import React, { useState, useEffect, useContext } from 'react';
 import { AuthContext } from '@/context/AuthContext';
-import { getProfile, updateProfile, getPublicProfile } from '@/api/profile';
-import { getMyLikes, likeEvent, unlikeEvent } from '@/api/event';
-import { ApiError, ProfileData } from '@/types';
+import { ProfileData } from '@/types';
+import { useProfile, usePublicProfile, useUpdateProfileMutation } from '@/hooks/useProfile';
+import { useMyLikes } from '@/hooks/useMyHangouts';
+import { useLikeMutation, useUnlikeMutation } from '@/hooks/useEvents';
 import ProfileView from './ProfileView';
 import ProfileEditForm from './ProfileEditForm';
 import { Skeleton } from '@/components/ui/shadcn/skeleton';
@@ -51,77 +52,41 @@ const UnauthenticatedProfile = () => (
 
 export default function ProfileScreen({ id }: ProfileScreenProps) {
   const { user } = useContext(AuthContext);
-  const [profile, setProfile] = useState<ProfileData | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const publicProfile = usePublicProfile(id || '');
+  const privateProfile = useProfile(!id);
+
+  const profileData = id ? publicProfile.data : privateProfile.data;
+  const profileLoading = id ? publicProfile.isLoading : privateProfile.isLoading;
+  const profileError = id ? publicProfile.error : privateProfile.error;
+
+  const { data: likesData } = useMyLikes();
+  const updateProfileMutation = useUpdateProfileMutation();
+  const likeMutation = useLikeMutation();
+  const unlikeMutation = useUnlikeMutation();
 
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState<ProfileData | null>(null);
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
-  const [isSaving, setIsSaving] = useState(false);
   const [activeTab, setActiveTab] = useState<'profile' | 'hosted' | 'reviews'>('profile');
-  const [likedEventIds, setLikedEventIds] = useState<Set<string>>(new Set());
+
+  const profile = profileData?.profile || profileData || null; // API structure handling
+  const loading = profileLoading;
+  const error = profileError ? 'Failed to load profile.' : null;
 
   const isOwnProfile = !id || (user && profile && user.profileId === profile.id);
+  const likedEventIds = new Set<string>(likesData?.likedEventIds?.map(String) || []);
 
   useEffect(() => {
-    if (user || id) {
-      fetchProfile();
-    } else {
-      setLoading(false);
+    if (profile && !formData) {
+      setFormData(profile);
     }
-  }, [user, id]);
-
-  async function fetchProfile() {
-    try {
-      const res = id ? await getPublicProfile(id) : await getProfile();
-      const profileData: ProfileData = res.data.profile;
-      setProfile(profileData);
-      setFormData(profileData);
-
-      if (user) {
-        try {
-          const likesRes = await getMyLikes();
-          const likedIds = new Set<string>(likesRes.data.likedEventIds?.map(String) || []);
-          setLikedEventIds(likedIds);
-        } catch {}
-      }
-    } catch (err) {
-      const error = err as ApiError;
-      setError(error.response?.data?.error || 'Failed to load profile.');
-    } finally {
-      setLoading(false);
-    }
-  }
+  }, [profile, formData]);
 
   const handleLike = async (eventId: string) => {
-    if (!user) {
-      alert('Please login to like events');
-      return;
-    }
-    const isCurrentlyLiked = likedEventIds.has(eventId);
-
-    setLikedEventIds((prev) => {
-      const updated = new Set(prev);
-      if (isCurrentlyLiked) updated.delete(eventId);
-      else updated.add(eventId);
-      return updated;
-    });
-
-    try {
-      if (isCurrentlyLiked) {
-        await unlikeEvent(eventId);
-      } else {
-        await likeEvent(eventId);
-      }
-    } catch {
-      setLikedEventIds((prev) => {
-        const updated = new Set(prev);
-        if (isCurrentlyLiked) updated.add(eventId);
-        else updated.delete(eventId);
-        return updated;
-      });
-      alert('Failed to update wishlist status. Please try again.');
+    if (likedEventIds.has(eventId)) {
+      unlikeMutation.mutate(eventId);
+    } else {
+      likeMutation.mutate(eventId);
     }
   };
 
@@ -188,16 +153,11 @@ export default function ProfileScreen({ id }: ProfileScreenProps) {
       return;
     }
 
-    setIsSaving(true);
     try {
-      await updateProfile({ ...dataToSave, age: Number(dataToSave.age) });
-      setProfile(dataToSave);
-      setFormData(dataToSave);
+      await updateProfileMutation.mutateAsync({ ...dataToSave, age: Number(dataToSave.age) });
       setIsEditing(false);
     } catch {
       alert('Failed to save profile changes.');
-    } finally {
-      setIsSaving(false);
     }
   };
 
@@ -283,7 +243,7 @@ export default function ProfileScreen({ id }: ProfileScreenProps) {
       <ProfileEditForm
         formData={formData}
         formErrors={formErrors}
-        isSaving={isSaving}
+        isSaving={updateProfileMutation.isPending}
         onUpdateField={updateField}
         onToggleList={toggleList}
         onSave={handleSave}

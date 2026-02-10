@@ -141,7 +141,7 @@ function HostedEventsGrid({
             hour: 'numeric',
             minute: '2-digit',
           }),
-          attendees: event._count.attendees,
+          attendees: event._count?.attendees ?? 0,
           maxAttendees: event.maxAttendees,
           category: formatCategory(event.category),
           priceType: event.priceType.toLowerCase() as 'free' | 'split_bill',

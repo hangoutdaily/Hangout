@@ -1,17 +1,15 @@
 'use client';
 
-import { useState, useEffect, useContext } from 'react';
+import { useState, useContext } from 'react';
 import { useSearchParams } from 'next/navigation';
 import EventCard from './EventCard';
+import { useEvents, useLikeMutation, useUnlikeMutation } from '@/hooks/useEvents';
 import {
-  getAllEvents,
-  getMyLikes,
-  getMyJoinedEvents,
-  joinEvent,
-  likeEvent,
-  unlikeEvent,
-  cancelJoinEvent,
-} from '@/api/event';
+  useMyLikes,
+  useMyJoinedEvents,
+  useJoinMutation,
+  useCancelJoinMutation,
+} from '@/hooks/useMyHangouts';
 import { Skeleton } from './shadcn/skeleton';
 import { AuthContext } from '@/context/AuthContext';
 import JoinEventDialog from '../layout/JoinEventDialog';
@@ -47,85 +45,48 @@ type FetchedEvent = {
 };
 
 export default function EventGrid() {
-  const [events, setEvents] = useState<FetchedEvent[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [likedEvents, setLikedEvents] = useState<Set<string>>(new Set());
-  const [joinStatus, setJoinStatus] = useState<
-    Record<string, 'NONE' | 'REQUESTED' | 'JOINED' | 'REJECTED'>
-  >({});
+  const searchParams = useSearchParams();
+  const search = searchParams.get('search') || undefined;
+  const category = searchParams.get('category') || undefined;
+  const time = searchParams.get('time') || undefined;
+  const date = searchParams.get('date') || undefined;
+
+  const { data: eventsData, isLoading: eventsLoading } = useEvents({
+    search,
+    category,
+    time,
+    date,
+  });
+  const { data: likesData } = useMyLikes();
+  const { data: joinedData } = useMyJoinedEvents();
+
+  const likeMutation = useLikeMutation();
+  const unlikeMutation = useUnlikeMutation();
+  const joinMutation = useJoinMutation();
+  const cancelJoinMutation = useCancelJoinMutation();
+
   const [joinDialogFor, setJoinDialogFor] = useState<number | null>(null);
   const [unjoinDialogFor, setUnjoinDialogFor] = useState<number | null>(null);
   const { user } = useContext(AuthContext);
-  const searchParams = useSearchParams();
 
-  useEffect(() => {
-    async function fetchData() {
-      setLoading(true);
-      try {
-        const search = searchParams.get('search') || undefined;
-        const category = searchParams.get('category') || undefined;
-        const time = searchParams.get('time') || undefined;
-        const date = searchParams.get('date') || undefined;
+  const events = eventsData?.events || [];
+  const loading = eventsLoading;
 
-        const eventsRes = await getAllEvents({ search, category, time, date });
-        setEvents(eventsRes.data.events);
+  const likedEvents = new Set(likesData?.likedEventIds?.map(String) || []);
 
-        if (user) {
-          const likesRes = await getMyLikes();
-          setLikedEvents(new Set(likesRes.data.likedEventIds.map(String)));
-
-          const joinedReq = await getMyJoinedEvents();
-          const statusMap: Record<string, 'NONE' | 'REQUESTED' | 'JOINED'> = {};
-
-          // If later you add requested IDs in the API, they’ll just start working
-          joinedReq.data?.requestedEventIds?.forEach((id: number) => {
-            statusMap[String(id)] = 'REQUESTED';
-          });
-
-          joinedReq.data?.joinedEventIds?.forEach((id: number) => {
-            statusMap[String(id)] = 'JOINED';
-          });
-
-          setJoinStatus(statusMap);
-        } else {
-          setLikedEvents(new Set());
-          setJoinStatus({});
-        }
-      } finally {
-        setLoading(false);
-      }
-    }
-    fetchData();
-  }, [user, searchParams]);
+  const joinStatus: Record<string, 'NONE' | 'REQUESTED' | 'JOINED' | 'REJECTED'> = {};
+  joinedData?.requestedEventIds?.forEach((id: number) => {
+    joinStatus[String(id)] = 'REQUESTED';
+  });
+  joinedData?.joinedEventIds?.forEach((id: number) => {
+    joinStatus[String(id)] = 'JOINED';
+  });
 
   const handleLike = async (eventId: string) => {
-    const currentlyLiked = likedEvents.has(eventId);
-    setLikedEvents((prev) => {
-      const updated = new Set(prev);
-      if (currentlyLiked) {
-        updated.delete(eventId);
-      } else {
-        updated.add(eventId);
-      }
-      return updated;
-    });
-
-    try {
-      if (currentlyLiked) {
-        await unlikeEvent(eventId);
-      } else {
-        await likeEvent(eventId);
-      }
-    } catch {
-      setLikedEvents((prev) => {
-        const updated = new Set(prev);
-        if (currentlyLiked) {
-          updated.add(eventId);
-        } else {
-          updated.delete(eventId);
-        }
-        return updated;
-      });
+    if (likedEvents.has(eventId)) {
+      unlikeMutation.mutate(eventId);
+    } else {
+      likeMutation.mutate(eventId);
     }
   };
 
@@ -156,8 +117,7 @@ export default function EventGrid() {
         onClose={() => setJoinDialogFor(null)}
         onSubmit={async (message) => {
           const id = joinDialogFor!;
-          await joinEvent(id, message);
-          setJoinStatus((prev) => ({ ...prev, [String(id)]: 'REQUESTED' }));
+          joinMutation.mutate({ id, message });
           setJoinDialogFor(null);
         }}
       />
@@ -167,14 +127,13 @@ export default function EventGrid() {
         onClose={() => setUnjoinDialogFor(null)}
         onConfirm={async () => {
           const id = unjoinDialogFor!;
-          await cancelJoinEvent(id);
-          setJoinStatus((prev) => ({ ...prev, [String(id)]: 'NONE' }));
+          cancelJoinMutation.mutate(id);
           setUnjoinDialogFor(null);
         }}
       />
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {events.map((event) => {
+        {events.map((event: FetchedEvent) => {
           const idStr = String(event.id);
           let status = joinStatus[idStr] || 'NONE';
           const isHost = isHostOfEvent(user, event.host?.id);
@@ -195,7 +154,7 @@ export default function EventGrid() {
                 hour: 'numeric',
                 minute: '2-digit',
               })}
-              attendees={event._count.attendees}
+              attendees={event._count?.attendees ?? 0}
               maxAttendees={event.maxAttendees}
               category={formatCategory(event.category)}
               priceType={event.priceType.toLowerCase() as 'free' | 'split_bill'}

@@ -1,22 +1,21 @@
 'use client';
 
-import { useState, useEffect, useContext } from 'react';
-import { Heart, AlertTriangle, Calendar, Clock, CheckCircle2 } from 'lucide-react';
+import { useState, useContext } from 'react';
+import { Heart, AlertTriangle, Calendar, Clock } from 'lucide-react';
 import EventCard from './EventCard';
-import {
-  getEvent,
-  getMyLikes,
-  unlikeEvent,
-  likeEvent,
-  getMyJoinedEvents,
-  joinEvent,
-  cancelJoinEvent,
-} from '@/api/event';
 import { Skeleton } from './shadcn/skeleton';
 import { AuthContext } from '@/context/AuthContext';
 import Link from 'next/link';
 import { formatCategory } from './EventGrid';
-import { ApiError } from '@/types';
+import {
+  useMyLikes,
+  useMyJoinedEvents,
+  useJoinMutation,
+  useCancelJoinMutation,
+} from '@/hooks/useMyHangouts';
+import { useLikeMutation, useUnlikeMutation } from '@/hooks/useEvents';
+import { useQueries } from '@tanstack/react-query';
+import * as eventApi from '@/api/event';
 import JoinEventDialog from '../layout/JoinEventDialog';
 import ConfirmUnjoinDialog from '../layout/ConfirmUnjoinDialog';
 import { isHostOfEvent } from '@/lib/utils';
@@ -48,134 +47,66 @@ type TabType = 'UPCOMING' | 'WISHLIST' | 'REQUESTED';
 
 export default function MyHangoutsGrid() {
   const [activeTab, setActiveTab] = useState<TabType>('UPCOMING');
-  const [events, setEvents] = useState<FetchedEvent[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const { user } = useContext(AuthContext);
-  const [likedIds, setLikedIds] = useState<Set<number>>(new Set());
-  const [joinStatus, setJoinStatus] = useState<
-    Record<string, 'NONE' | 'REQUESTED' | 'JOINED' | 'REJECTED'>
-  >({});
+
+  const { data: likesData, isLoading: likesLoading } = useMyLikes();
+  const { data: joinedData, isLoading: joinedLoading } = useMyJoinedEvents();
+
+  const likeMutation = useLikeMutation();
+  const unlikeMutation = useUnlikeMutation();
+  const joinMutation = useJoinMutation();
+  const cancelJoinMutation = useCancelJoinMutation();
+
   const [joinDialogFor, setJoinDialogFor] = useState<number | null>(null);
   const [unjoinDialogFor, setUnjoinDialogFor] = useState<number | null>(null);
 
-  useEffect(() => {
-    async function fetchData() {
-      setEvents([]);
-      setLoading(true);
-      setError(null);
+  const likedIds = new Set(likesData?.likedEventIds || []);
 
-      if (!user) {
-        setLoading(false);
-        return;
-      }
-
-      try {
-        let myLikedIds: number[] = [];
-        try {
-          const likesRes = await getMyLikes();
-          myLikedIds = likesRes.data.likedEventIds ?? [];
-          setLikedIds(new Set(myLikedIds));
-        } catch (e) {
-          console.error('Failed to fetch likes', e);
-        }
-
-        let targetIds: number[] = [];
-
-        if (activeTab === 'WISHLIST') {
-          targetIds = myLikedIds;
-        } else {
-          const joinedRes = await getMyJoinedEvents();
-          if (activeTab === 'UPCOMING') {
-            targetIds = joinedRes.data.joinedEventIds ?? [];
-          } else if (activeTab === 'REQUESTED') {
-            targetIds = joinedRes.data.requestedEventIds ?? [];
-          }
-        }
-
-        if (targetIds.length === 0) {
-          setEvents([]);
-          setLoading(false);
-          return;
-        }
-
-        const eventPromises = targetIds.map(async (id) => {
-          try {
-            const eventRes = await getEvent(String(id));
-            const eventData = eventRes.data.event;
-            if (!eventData._count) {
-              eventData._count = { attendees: eventData.attendees?.length ?? 0 };
-            }
-            return eventData as FetchedEvent;
-          } catch {
-            return null;
-          }
-        });
-
-        const fetchedEvents = (await Promise.all(eventPromises)).filter(
-          (e): e is FetchedEvent => e !== null
-        );
-
-        fetchedEvents.sort(
-          (a, b) => new Date(a.datetime).getTime() - new Date(b.datetime).getTime()
-        );
-
-        setEvents(fetchedEvents);
-
-        // Fetch status map for buttons
-        try {
-          const joinedReq = await getMyJoinedEvents();
-          const statusMap: Record<string, 'NONE' | 'REQUESTED' | 'JOINED'> = {};
-          joinedReq.data?.requestedEventIds?.forEach((id: number) => {
-            statusMap[String(id)] = 'REQUESTED';
-          });
-          joinedReq.data?.joinedEventIds?.forEach((id: number) => {
-            statusMap[String(id)] = 'JOINED';
-          });
-          setJoinStatus(statusMap);
-        } catch (e) {
-          console.error('Failed to fetch joined status', e);
-        }
-      } catch (err) {
-        const error = err as ApiError;
-        setError(error.response?.data?.error || 'Failed to load hangouts.');
-      } finally {
-        setLoading(false);
-      }
+  let targetIds: number[] = [];
+  if (user) {
+    if (activeTab === 'WISHLIST') {
+      targetIds = likesData?.likedEventIds || [];
+    } else if (activeTab === 'UPCOMING') {
+      targetIds = joinedData?.joinedEventIds || [];
+    } else if (activeTab === 'REQUESTED') {
+      targetIds = joinedData?.requestedEventIds || [];
     }
-    fetchData();
-  }, [user, activeTab]);
+  }
+
+  const eventQueries = useQueries({
+    queries: targetIds.map((id) => ({
+      queryKey: ['event', String(id)],
+      queryFn: async () => {
+        const res = await eventApi.getEvent(String(id));
+        return res.data.event;
+      },
+      enabled: !!user && targetIds.length > 0,
+    })),
+  });
+
+  const events = eventQueries
+    .map((q) => q.data)
+    .filter((e): e is FetchedEvent => !!e)
+    .sort((a, b) => new Date(a.datetime).getTime() - new Date(b.datetime).getTime());
+
+  const loading = likesLoading || joinedLoading || eventQueries.some((q) => q.isLoading);
+  const error = null;
+
+  const joinStatus: Record<string, 'NONE' | 'REQUESTED' | 'JOINED' | 'REJECTED'> = {};
+  if (joinedData) {
+    joinedData.requestedEventIds?.forEach((id: number) => {
+      joinStatus[String(id)] = 'REQUESTED';
+    });
+    joinedData.joinedEventIds?.forEach((id: number) => {
+      joinStatus[String(id)] = 'JOINED';
+    });
+  }
 
   const handleToggleLike = async (eventId: string) => {
-    const isLiked = likedIds.has(Number(eventId));
-
-    const newLikedIds = new Set(likedIds);
-    if (isLiked) {
-      newLikedIds.delete(Number(eventId));
+    if (likedIds.has(Number(eventId))) {
+      unlikeMutation.mutate(eventId);
     } else {
-      newLikedIds.add(Number(eventId));
-    }
-    setLikedIds(newLikedIds);
-
-    if (activeTab === 'WISHLIST' && isLiked) {
-      setEvents((prev) => prev.filter((e) => String(e.id) !== eventId));
-    }
-
-    try {
-      if (isLiked) {
-        await unlikeEvent(eventId);
-      } else {
-        await likeEvent(eventId);
-      }
-    } catch {
-      setLikedIds(likedIds);
-      if (activeTab === 'WISHLIST' && isLiked) {
-        // This is tricky to revert perfectly because we filtered it out.
-        // Ideally we'd keep it but hidden, or re-fetch.
-        // For now, simpler error handling or just let it be (unlikely failure).
-        // If we want to be perfect, we'd need to store the removed event and put it back.
-        // Let's implement basic revert logic for LikedIds at least.
-      }
+      likeMutation.mutate(eventId);
     }
   };
 
@@ -281,14 +212,8 @@ export default function MyHangoutsGrid() {
         onClose={() => setJoinDialogFor(null)}
         onSubmit={async (message) => {
           const id = joinDialogFor!;
-          await joinEvent(id, message);
-          setJoinStatus((prev) => ({ ...prev, [String(id)]: 'REQUESTED' }));
+          joinMutation.mutate({ id, message });
           setJoinDialogFor(null);
-          if (activeTab === 'REQUESTED') {
-            // Trigger refresh or manually add? Manually added complexity, let's just let it be.
-            // User will see change when revisiting or refreshing.
-            // Better UX: reload data.
-          }
         }}
       />
 
@@ -297,12 +222,8 @@ export default function MyHangoutsGrid() {
         onClose={() => setUnjoinDialogFor(null)}
         onConfirm={async () => {
           const id = unjoinDialogFor!;
-          await cancelJoinEvent(id);
-          setJoinStatus((prev) => ({ ...prev, [String(id)]: 'NONE' }));
+          cancelJoinMutation.mutate(id);
           setUnjoinDialogFor(null);
-          if (activeTab === 'UPCOMING' || activeTab === 'REQUESTED') {
-            setEvents((prev) => prev.filter((e) => e.id !== id));
-          }
         }}
       />
 
@@ -339,7 +260,7 @@ export default function MyHangoutsGrid() {
                 hour: 'numeric',
                 minute: '2-digit',
               }),
-              attendees: event._count.attendees,
+              attendees: event._count?.attendees ?? 0,
               maxAttendees: event.maxAttendees,
               category: formatCategory(event.category),
               priceType: event.priceType.toLowerCase() as 'free' | 'split_bill',
