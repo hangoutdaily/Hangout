@@ -31,6 +31,7 @@ import {
   Sunrise,
   LucideIcon,
 } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 type Option = {
   label: string;
@@ -160,14 +161,13 @@ export default function CategoryFilters() {
             setIsTimeOpen(false);
             setIsDatesOpen(false);
           }}
-          className={`flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium whitespace-nowrap border transition-all
+          className={`flex items-center gap-1.5 rounded-full px-5 py-2.5 text-[15px] font-medium whitespace-nowrap border transition-all
               ${
                 currentCategory
-                  ? 'bg-primary text-primary-foreground border-transparent'
-                  : 'bg-surface text-foreground hover:bg-accent/10 border-transparent'
+                  ? 'bg-primary text-primary-foreground border-primary'
+                  : 'bg-background text-foreground hover:bg-surface border-border shadow-sm'
               }`}
         >
-          <Sparkles className="h-4 w-4" />
           Category
           <ChevronDown
             className={`h-4 w-4 transition-transform ${isTypeOpen ? 'rotate-180' : 'rotate-0'}`}
@@ -185,14 +185,13 @@ export default function CategoryFilters() {
             setIsTypeOpen(false);
             setIsTimeOpen(false);
           }}
-          className={`flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium whitespace-nowrap border transition-all
+          className={`flex items-center gap-1.5 rounded-full px-5 py-2.5 text-[15px] font-medium whitespace-nowrap border transition-all
               ${
                 currentDate
-                  ? 'bg-primary text-primary-foreground border-transparent'
-                  : 'bg-surface text-foreground hover:bg-accent/10 border-transparent'
+                  ? 'bg-primary text-primary-foreground border-primary'
+                  : 'bg-background text-foreground hover:bg-surface border-border shadow-sm'
               }`}
         >
-          <Calendar className="h-4 w-4" />
           Date
           <ChevronDown
             className={`h-4 w-4 transition-transform ${isDatesOpen ? 'rotate-180' : 'rotate-0'}`}
@@ -205,14 +204,13 @@ export default function CategoryFilters() {
             setIsTypeOpen(false);
             setIsDatesOpen(false);
           }}
-          className={`flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium whitespace-nowrap border transition-all
+          className={`flex items-center gap-1.5 rounded-full px-5 py-2.5 text-[15px] font-medium whitespace-nowrap border transition-all
               ${
                 currentTime
-                  ? 'bg-primary text-primary-foreground border-transparent'
-                  : 'bg-surface text-foreground hover:bg-accent/10 border-transparent'
+                  ? 'bg-primary text-primary-foreground border-primary'
+                  : 'bg-background text-foreground hover:bg-surface border-border shadow-sm'
               }`}
         >
-          <Calendar className="h-4 w-4" />
           Time
           <ChevronDown
             className={`h-4 w-4 transition-transform ${isTimeOpen ? 'rotate-180' : 'rotate-0'}`}
@@ -220,100 +218,127 @@ export default function CategoryFilters() {
         </button>
 
         {/* Dropdowns */}
-        {isTypeOpen && (
-          <div className="absolute left-1/2 top-full mt-2 -translate-x-1/2 w-[min(90vw,760px)] max-h-[60vh] overflow-auto rounded-2xl border bg-background p-5 shadow-2xl z-50">
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-              {categories.map((option) => (
+        <AnimatePresence>
+          {isTypeOpen && (
+            <motion.div
+              initial={{ opacity: 0, y: 10, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 10, scale: 0.95 }}
+              transition={{ duration: 0.2, ease: 'easeOut' }}
+              className="absolute left-1/2 top-full mt-2 -translate-x-1/2 w-[min(90vw,760px)] max-h-[60vh] overflow-auto rounded-3xl border border-border/50 bg-background/80 backdrop-blur-xl p-6 shadow-2xl z-50 scrollbar-hide"
+            >
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                {categories.map((option) => (
+                  <button
+                    key={option.value}
+                    onClick={() => {
+                      updateParam(
+                        'category',
+                        currentCategory === option.value ? null : option.value
+                      );
+                      setIsTypeOpen(false);
+                    }}
+                    className={`flex items-center justify-start gap-3 rounded-2xl px-5 py-3 text-[15px] transition-all border ${
+                      currentCategory === option.value
+                        ? 'bg-primary text-primary-foreground border-primary shadow-md'
+                        : 'bg-surface/50 text-foreground hover:bg-surface border-transparent'
+                    }`}
+                  >
+                    <option.icon className="h-4.5 w-4.5" />
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+              <div className="mt-6 pt-4 border-t border-border/50 flex items-center justify-between">
                 <button
-                  key={option.value}
-                  onClick={() => {
-                    updateParam('category', currentCategory === option.value ? null : option.value);
-                    setIsTypeOpen(false);
-                  }}
-                  className={`flex items-center justify-start gap-3 rounded-full px-4 py-2 text-sm transition-all border ${
-                    currentCategory === option.value
-                      ? 'bg-accent text-accent-foreground border-transparent'
-                      : 'bg-surface text-foreground hover:bg-accent/10 border-transparent'
-                  }`}
+                  onClick={() => updateParam('category', null)}
+                  className="text-sm font-medium px-4 py-2 rounded-full hover:bg-surface transition-colors text-foreground/70 hover:text-foreground"
                 >
-                  <option.icon className="h-4 w-4" />
-                  {option.label}
+                  Clear Selection
                 </button>
-              ))}
-            </div>
-            <div className="mt-4 flex items-center justify-between">
-              <button
-                onClick={() => updateParam('category', null)}
-                className="text-sm text-foreground/70 hover:text-foreground"
-              >
-                Clear
-              </button>
-            </div>
-          </div>
-        )}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
-        {isDatesOpen && (
-          <div className="absolute left-1/2 top-full mt-2 -translate-x-1/2 w-[min(90vw,420px)] rounded-2xl border bg-background p-4 shadow-2xl z-50">
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-              {nextFourDates.map((item) => (
+        <AnimatePresence>
+          {isDatesOpen && (
+            <motion.div
+              initial={{ opacity: 0, y: 10, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 10, scale: 0.95 }}
+              transition={{ duration: 0.2, ease: 'easeOut' }}
+              className="absolute left-1/2 top-full mt-2 -translate-x-1/2 w-[min(90vw,420px)] rounded-3xl border border-border/50 bg-background/80 backdrop-blur-xl p-5 shadow-2xl z-50"
+            >
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                {nextFourDates.map((item) => (
+                  <button
+                    key={item.iso}
+                    onClick={() => {
+                      updateParam('date', currentDate === item.iso ? null : item.iso);
+                      setIsDatesOpen(false);
+                    }}
+                    className={`rounded-2xl px-4 py-3 text-sm border transition-all text-center ${
+                      currentDate === item.iso
+                        ? 'bg-primary text-primary-foreground border-primary shadow-md'
+                        : 'bg-surface/50 text-foreground hover:bg-surface border-transparent'
+                    }`}
+                  >
+                    {item.label}
+                  </button>
+                ))}
+              </div>
+              <div className="mt-5 pt-4 border-t border-border/50 flex items-center justify-between">
                 <button
-                  key={item.iso}
-                  onClick={() => {
-                    updateParam('date', currentDate === item.iso ? null : item.iso);
-                    setIsDatesOpen(false);
-                  }}
-                  className={`rounded-full px-4 py-2 text-sm border transition ${
-                    currentDate === item.iso
-                      ? 'bg-accent text-accent-foreground border-transparent'
-                      : 'bg-surface text-foreground hover:bg-accent/10 border-transparent'
-                  }`}
+                  onClick={() => updateParam('date', null)}
+                  className="text-sm font-medium px-4 py-2 rounded-full hover:bg-surface transition-colors text-foreground/70 hover:text-foreground"
                 >
-                  {item.label}
+                  Clear Selection
                 </button>
-              ))}
-            </div>
-            <div className="mt-4 flex items-center justify-between">
-              <button
-                onClick={() => updateParam('date', null)}
-                className="text-sm text-foreground/70 hover:text-foreground"
-              >
-                Clear
-              </button>
-            </div>
-          </div>
-        )}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
-        {isTimeOpen && (
-          <div className="absolute left-1/2 top-full mt-2 -translate-x-1/2 w-[min(90vw,360px)] rounded-2xl border bg-background p-4 shadow-2xl z-50">
-            <div className="grid grid-cols-1 gap-2">
-              {timeOptions.map((option) => (
+        <AnimatePresence>
+          {isTimeOpen && (
+            <motion.div
+              initial={{ opacity: 0, y: 10, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 10, scale: 0.95 }}
+              transition={{ duration: 0.2, ease: 'easeOut' }}
+              className="absolute left-1/2 top-full mt-2 -translate-x-1/2 w-[min(90vw,360px)] rounded-3xl border border-border/50 bg-background/80 backdrop-blur-xl p-5 shadow-2xl z-50"
+            >
+              <div className="grid grid-cols-1 gap-2">
+                {timeOptions.map((option) => (
+                  <button
+                    key={option.value}
+                    onClick={() => {
+                      updateParam('time', currentTime === option.value ? null : option.value);
+                      setIsTimeOpen(false);
+                    }}
+                    className={`w-full text-left rounded-2xl px-4 py-3 text-[15px] transition-all flex items-center gap-3 border ${
+                      currentTime === option.value
+                        ? 'bg-primary text-primary-foreground border-primary shadow-md'
+                        : 'bg-surface/50 text-foreground hover:bg-surface border-transparent'
+                    }`}
+                  >
+                    <option.icon className="h-4.5 w-4.5" />
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+              <div className="mt-5 pt-4 border-t border-border/50 flex items-center justify-between">
                 <button
-                  key={option.value}
-                  onClick={() => {
-                    updateParam('time', currentTime === option.value ? null : option.value);
-                    setIsTimeOpen(false);
-                  }}
-                  className={`w-full text-left rounded-md px-3 py-2 text-sm mb-1 border transition flex items-center gap-3 ${
-                    currentTime === option.value
-                      ? 'bg-accent text-accent-foreground border-transparent'
-                      : 'bg-surface text-foreground hover:bg-accent/10 border-transparent'
-                  }`}
+                  onClick={() => updateParam('time', null)}
+                  className="text-sm font-medium px-4 py-2 rounded-full hover:bg-surface transition-colors text-foreground/70 hover:text-foreground"
                 >
-                  <option.icon className="h-4 w-4" />
-                  {option.label}
+                  Clear Selection
                 </button>
-              ))}
-            </div>
-            <div className="mt-3 flex items-center justify-between">
-              <button
-                onClick={() => updateParam('time', null)}
-                className="text-sm text-foreground/70 hover:text-foreground"
-              >
-                Clear
-              </button>
-            </div>
-          </div>
-        )}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
       {(currentCategory || currentTime || currentDate) && (
