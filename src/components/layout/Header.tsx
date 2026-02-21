@@ -158,8 +158,8 @@ export default function Header() {
         </div>
         {isHome && (
           <div className="flex-1 flex justify-center max-w-lg">
-            <div className="relative w-full">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <div className="relative w-full group">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground transition-colors group-focus-within:text-primary" />
               <input
                 type="text"
                 placeholder="Search Hangouts..."
@@ -177,7 +177,7 @@ export default function Header() {
                   }
                   router.replace(`/?${params.toString()}`);
                 }}
-                className="w-full rounded-lg border border-border bg-surface pl-10 pr-4 py-1.5 text-foreground placeholder:text-muted-foreground transition-all"
+                className="w-full rounded-full border border-border/60 bg-background pl-11 pr-5 py-2 text-[15px] text-foreground placeholder:text-muted-foreground transition-all shadow-sm focus:outline-none focus:border-primary/50 focus:ring-4 focus:ring-primary/5"
               />
             </div>
           </div>
@@ -284,9 +284,9 @@ export default function Header() {
       </div>
 
       {isHome && (
-        <div className="md:hidden px-4 pb-3">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+        <div className="md:hidden px-4 pb-4">
+          <div className="relative group">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground transition-colors group-focus-within:text-primary" />
             <input
               type="text"
               placeholder="Search Hangouts..."
@@ -304,7 +304,7 @@ export default function Header() {
                 }
                 router.replace(`/?${params.toString()}`);
               }}
-              className="w-full rounded-xl border border-border bg-surface pl-10 pr-3 py-3 text-foreground placeholder:text-muted-foreground focus:outline-none transition-all"
+              className="w-full rounded-full border border-border/60 bg-background pl-12 pr-4 py-3 text-[16px] text-foreground placeholder:text-muted-foreground transition-all shadow-sm focus:outline-none focus:border-primary/50 focus:ring-4 focus:ring-primary/5"
             />
           </div>
         </div>
