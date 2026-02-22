@@ -22,6 +22,7 @@ export interface HostedEvent {
   maxAttendees: number;
   category: string;
   priceType: 'FREE' | 'SPLIT_BILL';
+  status?: 'UPCOMING' | 'COMPLETED' | 'CANCELLED';
   host: {
     name: string | null;
     selfie: string | null;

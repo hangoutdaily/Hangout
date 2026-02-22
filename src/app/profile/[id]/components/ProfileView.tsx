@@ -157,6 +157,8 @@ function HostedEventsGrid({
             {...eventProps}
             isLiked={likedEventIds.has(eventProps.id)}
             status="JOINED"
+            eventStatus={event.status}
+            isPast={new Date(event.datetime) < new Date()}
             onLike={() => onLike(eventProps.id)}
             onJoin={() => {}}
           />
