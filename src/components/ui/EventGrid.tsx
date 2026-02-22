@@ -33,6 +33,7 @@ type FetchedEvent = {
   maxAttendees: number;
   category: string;
   priceType: 'FREE' | 'SPLIT_BILL';
+  status?: 'UPCOMING' | 'COMPLETED' | 'CANCELLED';
   host: {
     id: number;
     name: string | null;
@@ -165,6 +166,8 @@ export default function EventGrid() {
               }}
               isLiked={likedEvents.has(idStr)}
               status={status}
+              eventStatus={event.status}
+              isPast={new Date(event.datetime) < new Date()}
               onLike={() => handleLike(idStr)}
               onJoin={() => {
                 if (!user) return (window.location.href = '/login');

@@ -4,6 +4,7 @@ import { MapPin, Calendar, Clock, Users, Heart, Zap } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
+import { cn } from '@/lib/utils';
 
 type EventCardProps = {
   id: string;
@@ -20,6 +21,8 @@ type EventCardProps = {
   creator: { name: string; avatar: string };
   isLiked?: boolean;
   status?: 'NONE' | 'REQUESTED' | 'JOINED' | 'REJECTED';
+  eventStatus?: 'UPCOMING' | 'COMPLETED' | 'CANCELLED';
+  isPast?: boolean;
   onLike?: () => void;
   onJoin?: () => void;
 };
@@ -39,9 +42,14 @@ export default function EventCard({
   creator,
   isLiked = false,
   status = 'NONE',
+  eventStatus = 'UPCOMING',
+  isPast = false,
   onLike,
   onJoin,
 }: EventCardProps) {
+  const isCancelled = eventStatus === 'CANCELLED';
+  const isDone = eventStatus === 'COMPLETED' || isPast;
+
   const formatPrice = () => {
     if (priceType === 'free') return 'Free';
     if (priceType === 'split_bill') return 'Split';
@@ -51,16 +59,35 @@ export default function EventCard({
   return (
     <Link
       href={`/events/${id}`}
-      className="flex flex-col h-full rounded-xl overflow-hidden border border-border bg-card hover:shadow-md hover:border-accent/30 transition-all duration-300"
+      className={cn(
+        'flex flex-col h-full rounded-xl overflow-hidden border border-border bg-card transition-all duration-300 relative group',
+        isDone || isCancelled
+          ? 'bg-secondary/20 hover:bg-secondary/30'
+          : 'hover:shadow-md hover:border-accent/30'
+      )}
     >
-      <div className="px-5 pt-4 pb-3 flex items-center justify-between">
-        <div className="flex items-center gap-4 text-sm text-muted flex-1">
-          <div className="flex items-center gap-2">
-            <Calendar className="h-4 w-4" />
+      {(isDone || isCancelled) && (
+        <div className="absolute inset-0 bg-background/5 mix-blend-multiply pointer-events-none" />
+      )}
+
+      <div className="px-5 pt-4 pb-2 flex items-center justify-between">
+        <div className="flex items-center gap-3 text-xs text-muted flex-1 overflow-hidden">
+          {isCancelled ? (
+            <span className="shrink-0 px-2 py-0.5 rounded-full bg-rose-500/10 text-rose-600 text-[10px] font-bold uppercase tracking-wider border border-rose-500/20">
+              Called Off
+            </span>
+          ) : isDone ? (
+            <span className="shrink-0 px-2 py-0.5 rounded-full bg-slate-500/10 text-slate-600 text-[10px] font-bold uppercase tracking-wider border border-slate-500/20">
+              Done
+            </span>
+          ) : null}
+
+          <div className="flex items-center gap-1.5 shrink-0">
+            <Calendar className="h-3.5 w-3.5 opacity-70" />
             <span>{date}</span>
           </div>
-          <div className="flex items-center gap-2">
-            <Clock className="h-4 w-4" />
+          <div className="flex items-center gap-1.5 shrink-0">
+            <Clock className="h-3.5 w-3.5 opacity-70" />
             <span>{time}</span>
           </div>
         </div>

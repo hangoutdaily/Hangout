@@ -84,10 +84,19 @@ export default function MyHangoutsGrid() {
     })),
   });
 
-  const events = eventQueries
-    .map((q) => q.data)
-    .filter((e): e is FetchedEvent => !!e)
+  const allEvents = eventQueries.map((q) => q.data).filter((e): e is FetchedEvent => !!e);
+
+  const now = new Date();
+
+  const futureEvents = allEvents
+    .filter((e) => new Date(e.datetime) >= now && e.status !== 'CANCELLED')
     .sort((a, b) => new Date(a.datetime).getTime() - new Date(b.datetime).getTime());
+
+  const doneOrCancelledEvents = allEvents
+    .filter((e) => new Date(e.datetime) < now || e.status === 'CANCELLED')
+    .sort((a, b) => new Date(b.datetime).getTime() - new Date(a.datetime).getTime());
+
+  const events = [...futureEvents, ...doneOrCancelledEvents];
 
   const loading = likesLoading || joinedLoading || eventQueries.some((q) => q.isLoading);
   const error = null;
@@ -269,6 +278,8 @@ export default function MyHangoutsGrid() {
                 avatar:
                   event.host?.photos?.[0] || event.host?.selfie || 'https://i.pravatar.cc/40?img=1',
               },
+              eventStatus: event.status,
+              isPast: new Date(event.datetime) < now,
             };
 
             const idStr = event.id.toString();
