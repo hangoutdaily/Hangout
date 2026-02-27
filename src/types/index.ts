@@ -78,3 +78,32 @@ export interface ApiError {
     };
   };
 }
+
+export interface ChatRoomCard {
+  eventId: number;
+  eventTitle: string;
+  eventDatetime: string;
+  eventPhoto: string | null;
+  eventStatus: 'UPCOMING' | 'COMPLETED' | 'CANCELLED';
+  memberCount: number;
+  roomStatus: 'ACTIVE' | 'ARCHIVED';
+  isRemoved: boolean;
+  lastMessage: {
+    content: string;
+    senderName: string | null;
+    createdAt: string;
+  } | null;
+}
+
+export interface ChatMessage {
+  id: number;
+  chatRoomId: number;
+  senderId: number;
+  content: string;
+  createdAt: string;
+  sender: {
+    id: number;
+    name: string | null;
+    selfie: string | null;
+  };
+}
