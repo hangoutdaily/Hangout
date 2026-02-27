@@ -122,7 +122,6 @@ export default function SignupForm() {
       else if (phoneRegex.test(formData.email)) payload.phone = formData.email;
 
       const res = await signup(payload);
-      console.log(res.data);
 
       setUser(res.data.authUser);
       localStorage.setItem('accessToken', res.data.accessToken);

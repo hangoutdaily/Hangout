@@ -4,6 +4,7 @@ import Header from '@/components/layout/Header';
 import { ThemeProvider } from '@/contexts/ThemeContext';
 import AuthProvider from '@/context/AuthContext';
 import ReactQueryProvider from '@/providers/ReactQueryProvider';
+import SocketProvider from '@/providers/SocketProvider';
 
 export const metadata: Metadata = {
   title: 'Hangout',
@@ -20,12 +21,14 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en" suppressHydrationWarning>
       <body className="min-h-screen bg-background text-foreground antialiased">
         <AuthProvider>
-          <ThemeProvider>
-            <ReactQueryProvider>
-              <Header />
-              <main className="pb-16 md:pb-0 max-w-[100vw] overflow-x-hidden">{children}</main>
-            </ReactQueryProvider>
-          </ThemeProvider>
+          <SocketProvider>
+            <ThemeProvider>
+              <ReactQueryProvider>
+                <Header />
+                <main className="pb-16 md:pb-0 max-w-[100vw] overflow-x-hidden">{children}</main>
+              </ReactQueryProvider>
+            </ThemeProvider>
+          </SocketProvider>
         </AuthProvider>
       </body>
     </html>

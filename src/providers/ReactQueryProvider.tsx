@@ -18,8 +18,6 @@ export default function ReactQueryProvider({ children }: { children: React.React
         },
       })
   );
-
-  console.log('ReactQueryProvider rendering');
   return (
     <QueryClientProvider client={queryClient}>
       {children}
