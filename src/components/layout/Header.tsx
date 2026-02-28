@@ -24,6 +24,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '../ui/shadcn/avatar';
 import { AuthContext } from '@/context/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import MobileNav from './MobileNav';
+import { useScrollDirection } from '@/hooks/useScrollDirection';
 
 export default function Header() {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
@@ -33,8 +34,13 @@ export default function Header() {
   const settingsRef = useRef<HTMLDivElement | null>(null);
   const { user, logoutUser } = useContext(AuthContext);
   const { theme, setTheme } = useTheme();
+  const router = useRouter();
+  const scrollDirection = useScrollDirection();
 
   const isHome = pathname === '/';
+
+  // Hide main header inside individual chat rooms (they have their own header)
+  const isChatRoom = /^\/chats\/\d+/.test(pathname);
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -49,6 +55,8 @@ export default function Header() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [isProfileOpen, isSettingsOpen]);
 
+  if (isChatRoom) return null;
+
   const desktopNav = [
     { href: '/create', label: 'Create' },
     { href: '/chats', label: 'Chats' },
@@ -61,10 +69,14 @@ export default function Header() {
     { href: '/chats', label: 'Chats', icon: MessageCircle },
     { href: '/profile', label: 'Profile', icon: Users },
   ];
-  const router = useRouter();
 
   return (
-    <header className="sticky top-0 z-50 w-full bg-background">
+    <header
+      className={cn(
+        'sticky top-0 z-50 w-full bg-background transition-transform duration-300 ease-in-out',
+        scrollDirection === 'down' && '-translate-y-full'
+      )}
+    >
       <div className="flex items-center justify-between h-14 px-4 md:hidden">
         <Link href="/" className="text-lg font-bold text-foreground">
           Hangout
@@ -309,8 +321,6 @@ export default function Header() {
           </div>
         </div>
       )}
-
-      <MobileNav />
     </header>
   );
 }

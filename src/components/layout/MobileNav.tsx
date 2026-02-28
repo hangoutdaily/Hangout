@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Home, Heart, PlusSquare, MessageCircle, Users } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useScrollDirection } from '@/hooks/useScrollDirection';
 
 const mobileNavItems = [
   { href: '/', icon: Home },
@@ -16,9 +17,19 @@ const mobileNavItems = [
 
 export default function MobileNav() {
   const pathname = usePathname();
+  const scrollDirection = useScrollDirection();
+
+  // Hide nav inside individual chat rooms (e.g. /chats/123)
+  const isChatRoom = /^\/chats\/\d+/.test(pathname);
+  if (isChatRoom) return null;
 
   return (
-    <nav className="fixed bottom-6 left-1/2 -translate-x-1/2 w-[92%] max-w-[420px] h-18 bg-background/80 backdrop-blur-xl border border-border/40 rounded-3xl shadow-2xl z-50 md:hidden px-3">
+    <nav
+      className={cn(
+        'fixed left-1/2 -translate-x-1/2 w-[92%] max-w-[420px] h-18 bg-background/80 backdrop-blur-xl border border-border/40 rounded-3xl shadow-2xl z-50 md:hidden px-3 transition-[bottom] duration-300 ease-in-out',
+        scrollDirection === 'down' ? '-bottom-24' : 'bottom-6'
+      )}
+    >
       <div className="flex justify-between items-center h-full relative">
         <AnimatePresence>
           {mobileNavItems.map(({ href, icon: Icon, isSpecial }) => {

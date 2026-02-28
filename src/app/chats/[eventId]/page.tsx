@@ -53,9 +53,11 @@ export default function ChatRoomPage() {
   const [isArchived, setIsArchived] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const [nextCursor, setNextCursor] = useState<number | null>(null);
+  const [eventTitle, setEventTitle] = useState('Chat');
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const hasScrolledRef = useRef(false);
 
   const myProfileId = user?.profile?.id;
@@ -69,6 +71,7 @@ export default function ChatRoomPage() {
       setMessages(data.messages || []);
       setNextCursor(data.nextCursor);
       setIsArchived(data.roomStatus === 'ARCHIVED');
+      if (data.eventTitle) setEventTitle(data.eventTitle);
       return data;
     },
     enabled: !!user && !!eventId,
@@ -145,6 +148,11 @@ export default function ChatRoomPage() {
     });
     setNewMessage('');
     setIsSending(false);
+
+    // Reset textarea height
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto';
+    }
   }, [newMessage, socket, isSending, isArchived, eventId]);
 
   // Handle key press (Enter to send)
@@ -153,6 +161,14 @@ export default function ChatRoomPage() {
       e.preventDefault();
       handleSend();
     }
+  };
+
+  // Auto-resize textarea
+  const handleTextareaChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setNewMessage(e.target.value);
+    const textarea = e.target;
+    textarea.style.height = 'auto';
+    textarea.style.height = Math.min(textarea.scrollHeight, 120) + 'px';
   };
 
   // Load more (scroll to top to load earlier messages)
@@ -192,33 +208,28 @@ export default function ChatRoomPage() {
 
   const messageGroups = groupMessagesByDate(messages);
 
-  // Get event title from first message's context or use "Chat"
-  const eventTitle = queryClient.getQueryData<any>(['chatMessages', eventId])
-    ? 'Group Chat'
-    : 'Chat';
-
   return (
     <div className="flex flex-col h-[100dvh] bg-background">
-      {/* Header */}
+      {/* Header — flex-shrink-0 keeps it pinned above the scroll area */}
       <div className="flex-shrink-0 bg-background/80 backdrop-blur-xl border-b border-border/40 z-20">
         <div className="max-w-lg mx-auto flex items-center gap-3 px-4 py-3">
           <button
             onClick={() => router.push('/chats')}
-            className="p-1.5 -ml-1.5 rounded-xl hover:bg-surface transition-colors"
+            className="p-2 -ml-2 rounded-xl hover:bg-surface active:scale-95 transition-all"
           >
             <ArrowLeft className="w-5 h-5" />
           </button>
 
           <div className="flex-1 min-w-0">
-            <h1 className="text-base font-semibold truncate">{eventTitle}</h1>
+            <h1 className="text-base font-semibold truncate max-w-[220px]">{eventTitle}</h1>
             <div className="flex items-center gap-1.5">
               {isArchived ? (
-                <span className="text-xs text-muted-foreground flex items-center gap-1">
+                <span className="text-[11px] text-muted-foreground flex items-center gap-1">
                   <Archive className="w-3 h-3" />
                   Read-only
                 </span>
               ) : (
-                <span className="text-xs text-muted-foreground flex items-center gap-1">
+                <span className="text-[11px] text-muted-foreground flex items-center gap-1">
                   <Users className="w-3 h-3" />
                   Group Chat
                 </span>
@@ -360,35 +371,40 @@ export default function ChatRoomPage() {
         </div>
       </div>
 
-      {/* Input Bar */}
+      {/* Improved Input Bar */}
       {!isArchived && (
-        <div className="flex-shrink-0 bg-background/80 backdrop-blur-xl border-t border-border/40">
-          <div className="max-w-lg mx-auto px-4 py-3">
-            <div className="flex items-center gap-2">
-              <input
-                type="text"
+        <div className="flex-shrink-0 border-t border-border/40 bg-background">
+          <div className="max-w-lg mx-auto px-3 py-2.5 pb-[max(0.625rem,env(safe-area-inset-bottom))]">
+            <div
+              className="flex items-end gap-2 bg-surface rounded-2xl border border-border/60 px-3 py-1.5
+              focus-within:border-foreground/20 focus-within:ring-2 focus-within:ring-foreground/5 transition-all"
+            >
+              <textarea
+                ref={textareaRef}
                 value={newMessage}
-                onChange={(e) => setNewMessage(e.target.value)}
+                onChange={handleTextareaChange}
                 onKeyDown={handleKeyDown}
                 placeholder="Type a message..."
-                className="flex-1 bg-surface border border-border/60 rounded-2xl px-4 py-2.5 text-sm
-                  placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-ring/20
-                  focus:border-border transition-all"
+                rows={1}
+                className="flex-1 bg-transparent resize-none text-sm leading-relaxed py-1.5
+                  placeholder:text-muted-foreground/50 focus:outline-none max-h-[120px]
+                  scrollbar-thin scrollbar-thumb-border"
               />
-              <button
+              <motion.button
                 onClick={handleSend}
                 disabled={!newMessage.trim() || isSending}
+                whileTap={{ scale: 0.9 }}
                 className={`
-                  p-2.5 rounded-2xl transition-all
+                  flex-shrink-0 p-2 rounded-xl mb-0.5 transition-all duration-200
                   ${
                     newMessage.trim()
-                      ? 'bg-foreground text-background hover:opacity-90 active:scale-95'
-                      : 'bg-surface text-muted-foreground/40'
+                      ? 'bg-foreground text-background shadow-sm hover:opacity-90'
+                      : 'bg-transparent text-muted-foreground/40'
                   }
                 `}
               >
-                <Send className="w-4.5 h-4.5" />
-              </button>
+                <Send className="w-[18px] h-[18px]" />
+              </motion.button>
             </div>
           </div>
         </div>

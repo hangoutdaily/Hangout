@@ -225,7 +225,7 @@ export default function CategoryFilters() {
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 10, scale: 0.95 }}
               transition={{ duration: 0.2, ease: 'easeOut' }}
-              className="absolute left-1/2 top-full mt-2 -translate-x-1/2 w-[min(90vw,760px)] max-h-[60vh] overflow-auto rounded-3xl border border-border/50 bg-white p-6 shadow-2xl z-50 scrollbar-hide"
+              className="absolute left-1/2 top-full mt-2 -translate-x-1/2 w-[min(90vw,760px)] max-h-[60vh] overflow-auto rounded-3xl border border-border/50 bg-background p-6 shadow-2xl z-50 scrollbar-hide"
             >
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
                 {categories.map((option) => (
@@ -268,7 +268,7 @@ export default function CategoryFilters() {
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 10, scale: 0.95 }}
               transition={{ duration: 0.2, ease: 'easeOut' }}
-              className="absolute left-1/2 top-full mt-2 -translate-x-1/2 w-[min(90vw,420px)] rounded-3xl border border-border/50 bg-white p-5 shadow-2xl z-50"
+              className="absolute left-1/2 top-full mt-2 -translate-x-1/2 w-[min(90vw,420px)] rounded-3xl border border-border/50 bg-background p-5 shadow-2xl z-50"
             >
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                 {nextFourDates.map((item) => (
@@ -307,7 +307,7 @@ export default function CategoryFilters() {
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 10, scale: 0.95 }}
               transition={{ duration: 0.2, ease: 'easeOut' }}
-              className="absolute left-1/2 top-full mt-2 -translate-x-1/2 w-[min(90vw,360px)] rounded-3xl border border-border/50 bg-white p-5 shadow-2xl z-50"
+              className="absolute left-1/2 top-full mt-2 -translate-x-1/2 w-[min(90vw,360px)] rounded-3xl border border-border/50 bg-background p-5 shadow-2xl z-50"
             >
               <div className="grid grid-cols-1 gap-2">
                 {timeOptions.map((option) => (
