@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import './globals.css';
 import Header from '@/components/layout/Header';
+import MobileNav from '@/components/layout/MobileNav';
 import { ThemeProvider } from '@/contexts/ThemeContext';
 import AuthProvider from '@/context/AuthContext';
 import ReactQueryProvider from '@/providers/ReactQueryProvider';
@@ -25,6 +26,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <ThemeProvider>
               <ReactQueryProvider>
                 <Header />
+                <MobileNav />
                 <main className="pb-16 md:pb-0 max-w-[100vw] overflow-x-hidden">{children}</main>
               </ReactQueryProvider>
             </ThemeProvider>
