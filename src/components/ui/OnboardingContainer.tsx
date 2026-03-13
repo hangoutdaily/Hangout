@@ -1,6 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useContext } from 'react';
+import { AuthContext } from '@/context/AuthContext';
+import { checkAuth } from '@/api/auth';
 import { Screen1 } from '@/app/onboarding/components/Screen1';
 import { Screen2 } from '@/app/onboarding/components/Screen2';
 import { Screen3 } from '@/app/onboarding/components/Screen3';
@@ -46,6 +48,7 @@ export function OnboardingContainer() {
 
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
   const router = useRouter();
+  const { setUser } = useContext(AuthContext);
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -148,6 +151,12 @@ export function OnboardingContainer() {
         languages: Array.from(formData.languages || []),
       };
       await createProfile(payload);
+      try {
+        const res = await checkAuth();
+        setUser(res.data.user);
+      } catch (err) {
+        console.error('Failed to update auth context:', err);
+      }
       router.push('/');
     } catch (err) {
       console.error('Submit failed', err);

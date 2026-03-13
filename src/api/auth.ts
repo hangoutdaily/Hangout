@@ -6,6 +6,8 @@ export const signup = (data: { email?: string; phone?: string; password: string 
 export const login = (data: { email?: string; phone?: string; password: string }) =>
   api.post('/auth/login', data);
 
+export const googleLogin = (code: string) => api.post('/auth/google', { code });
+
 export const checkAuth = () => api.get('/auth/checkAuth');
 
 export const logout = () => api.post('/auth/logout');
