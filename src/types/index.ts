@@ -68,6 +68,7 @@ export interface User {
     name?: string;
     selfie?: string;
     photos?: string[];
+    city?: string;
   };
 }
 

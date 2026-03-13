@@ -19,9 +19,13 @@ export default function MobileNav() {
   const pathname = usePathname();
   const scrollDirection = useScrollDirection();
 
-  // Hide nav inside individual chat rooms (e.g. /chats/123)
+  // Hide nav inside individual chat rooms (e.g. /chats/123) and onboarding flows
   const isChatRoom = /^\/chats\/\d+/.test(pathname);
-  if (isChatRoom) return null;
+  const isOnboarding = ['/login', '/signup', '/onboarding'].some((path) =>
+    pathname.startsWith(path)
+  );
+
+  if (isChatRoom || isOnboarding) return null;
 
   return (
     <nav
