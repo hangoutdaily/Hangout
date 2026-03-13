@@ -1,10 +1,13 @@
 'use client';
 
 import { Search, MapPin, Calendar } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useContext } from 'react';
+import { AuthContext } from '@/context/AuthContext';
 
 export default function HeroSection() {
   const [searchQuery, setSearchQuery] = useState('');
+  const { user } = useContext(AuthContext);
+  const userCity = user?.profile?.city || 'Ahmedabad';
 
   return (
     <div className="relative bg-gradient-to-br from-foreground/5 via-background to-foreground/5 py-12 md:py-20">

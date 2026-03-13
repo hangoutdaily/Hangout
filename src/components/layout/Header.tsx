@@ -36,6 +36,7 @@ export default function Header() {
   const { theme, setTheme } = useTheme();
   const router = useRouter();
   const scrollDirection = useScrollDirection();
+  const userCity = user?.profile?.city || 'Ahmedabad';
 
   const isHome = pathname === '/';
 
@@ -83,7 +84,7 @@ export default function Header() {
         </Link>
         <div className="flex items-center text-sm font-medium text-foreground">
           <MapPin className="mr-1 h-4 w-4 text-accent" />
-          Gandhinagar, India
+          {userCity}, India
         </div>
         <div className="flex items-center gap-2">
           <button
@@ -165,7 +166,7 @@ export default function Header() {
           </Link>
           <div className="flex items-center text-sm text-muted">
             <MapPin className="mr-1 h-4 w-4 text-accent" />
-            Gandhinagar, India
+            {userCity}, India
           </div>
         </div>
         {isHome && (
