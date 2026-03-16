@@ -18,6 +18,7 @@ import {
   Monitor,
   LogOut,
 } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import ThemeToggle from '@/components/ui/ThemeToggle';
 import { cn } from '@/lib/utils';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/shadcn/avatar';
@@ -26,9 +27,26 @@ import { useTheme } from '@/contexts/ThemeContext';
 import MobileNav from './MobileNav';
 import { useScrollDirection } from '@/hooks/useScrollDirection';
 
+const placeholders = [
+  'Search "Midnight Walk"',
+  'Search "Chai and gossip"',
+  'Search "Dmart Together?"',
+  'Search "Gully Cricket"',
+  'Search "Board Game Night"',
+  'Search "Birthday Crashers"',
+  'Search "No Phone Hangout"',
+  'Search "Street Food Hunt"',
+  'Search "Sunset Talks"',
+  'Search "Badminton Match"',
+  'Search "Try Matcha Together?"',
+  'Search "Mystery Dinner"',
+];
+
 export default function Header() {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [searchValue, setSearchValue] = useState('');
+  const [placeholderIndex, setPlaceholderIndex] = useState(0);
   const pathname = usePathname();
   const profileRef = useRef<HTMLDivElement | null>(null);
   const settingsRef = useRef<HTMLDivElement | null>(null);
@@ -55,6 +73,19 @@ export default function Header() {
     if (isProfileOpen || isSettingsOpen) document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [isProfileOpen, isSettingsOpen]);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      setSearchValue(new URLSearchParams(window.location.search).get('search') || '');
+    }
+  }, [pathname]);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setPlaceholderIndex((prev) => (prev + 1) % placeholders.length);
+    }, 2000);
+    return () => clearInterval(interval);
+  }, []);
 
   if (isChatRoom) return null;
 
@@ -84,7 +115,7 @@ export default function Header() {
         </Link>
         <div className="flex items-center text-sm font-medium text-foreground">
           <MapPin className="mr-1 h-4 w-4 text-accent" />
-          {userCity}, India
+          {userCity}
         </div>
         <div className="flex items-center gap-2">
           <button
@@ -166,25 +197,22 @@ export default function Header() {
           </Link>
           <div className="flex items-center text-sm text-muted">
             <MapPin className="mr-1 h-4 w-4 text-accent" />
-            {userCity}, India
+            {userCity}
           </div>
         </div>
         {isHome && (
           <div className="flex-1 flex justify-center max-w-lg">
             <div className="relative w-full group">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground transition-colors group-focus-within:text-primary" />
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground transition-colors group-focus-within:text-primary z-10" />
               <input
                 type="text"
-                placeholder="Search Hangouts..."
-                defaultValue={
-                  new URLSearchParams(
-                    typeof window !== 'undefined' ? window.location.search : ''
-                  ).get('search') || ''
-                }
+                value={searchValue}
                 onChange={(e) => {
+                  const val = e.target.value;
+                  setSearchValue(val);
                   const params = new URLSearchParams(window.location.search);
-                  if (e.target.value) {
-                    params.set('search', e.target.value);
+                  if (val) {
+                    params.set('search', val);
                   } else {
                     params.delete('search');
                   }
@@ -192,6 +220,22 @@ export default function Header() {
                 }}
                 className="w-full rounded-full border border-border/60 bg-background pl-11 pr-5 py-2 text-[15px] text-foreground placeholder:text-muted-foreground transition-all shadow-sm focus:outline-none focus:border-primary/50 focus:ring-4 focus:ring-primary/5"
               />
+              {!searchValue && (
+                <div className="absolute top-0 left-11 bottom-0 right-5 flex items-center pointer-events-none overflow-hidden">
+                  <AnimatePresence mode="popLayout">
+                    <motion.span
+                      key={placeholderIndex}
+                      initial={{ y: 20, opacity: 0 }}
+                      animate={{ y: 0, opacity: 1 }}
+                      exit={{ y: -20, opacity: 0 }}
+                      transition={{ duration: 0.3, ease: 'easeOut' }}
+                      className="text-muted-foreground text-[15px] absolute"
+                    >
+                      {placeholders[placeholderIndex]}
+                    </motion.span>
+                  </AnimatePresence>
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -299,26 +343,39 @@ export default function Header() {
       {isHome && (
         <div className="md:hidden px-4 pb-4">
           <div className="relative group">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground transition-colors group-focus-within:text-primary" />
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground transition-colors group-focus-within:text-primary z-10" />
             <input
               type="text"
-              placeholder="Search Hangouts..."
-              defaultValue={
-                new URLSearchParams(
-                  typeof window !== 'undefined' ? window.location.search : ''
-                ).get('search') || ''
-              }
+              value={searchValue}
               onChange={(e) => {
+                const val = e.target.value;
+                setSearchValue(val);
                 const params = new URLSearchParams(window.location.search);
-                if (e.target.value) {
-                  params.set('search', e.target.value);
+                if (val) {
+                  params.set('search', val);
                 } else {
                   params.delete('search');
                 }
                 router.replace(`/?${params.toString()}`);
               }}
-              className="w-full rounded-full border border-border/60 bg-background pl-12 pr-4 py-3 text-[16px] text-foreground placeholder:text-muted-foreground transition-all shadow-sm focus:outline-none focus:border-primary/50 focus:ring-4 focus:ring-primary/5"
+              className="w-full rounded-full border border-border/60 bg-background pl-12 pr-4 py-3 text-[16px] text-foreground transition-all shadow-sm focus:outline-none focus:border-primary/50 focus:ring-4 focus:ring-primary/5"
             />
+            {!searchValue && (
+              <div className="absolute top-0 left-12 bottom-0 right-4 flex items-center pointer-events-none overflow-hidden">
+                <AnimatePresence mode="popLayout">
+                  <motion.span
+                    key={placeholderIndex}
+                    initial={{ y: 20, opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    exit={{ y: -20, opacity: 0 }}
+                    transition={{ duration: 0.3, ease: 'easeOut' }}
+                    className="text-muted-foreground text-[16px] absolute"
+                  >
+                    {placeholders[placeholderIndex]}
+                  </motion.span>
+                </AnimatePresence>
+              </div>
+            )}
           </div>
         </div>
       )}
