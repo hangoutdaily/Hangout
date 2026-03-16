@@ -136,12 +136,14 @@ export function Screen2({ data, onChange, errors = {} }: Screen2Props) {
         </div>
 
         <div className="space-y-3">
-          <Label className="text-sm font-medium text-foreground">What are you excited about?</Label>
+          <Label className="text-sm font-medium text-foreground">
+            What are you excited about? (pick at least 3)
+          </Label>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
             {interests.map(({ name, Icon }) => (
               <button
                 key={name}
-                onClick={() => handleToggle('interests', name, 5)}
+                onClick={() => handleToggle('interests', name, 8)}
                 className={cn(
                   'px-4 py-3 rounded-lg text-sm font-medium border flex items-center gap-2 transition-all',
                   (data.interests || []).includes(name)

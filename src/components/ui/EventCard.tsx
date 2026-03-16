@@ -160,18 +160,18 @@ export default function EventCard({
           className={`px-4 py-1.5 rounded-lg font-semibold text-sm cursor-pointer transition-all whitespace-nowrap
             ${
               status === 'JOINED'
-                ? 'bg-green-100 text-green-700 hover:bg-green-200'
+                ? 'bg-black text-white hover:bg-black/80'
                 : status === 'REQUESTED'
-                  ? 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200'
+                  ? 'bg-black text-white hover:bg-black/80'
                   : status === 'REJECTED'
-                    ? 'bg-destructive/20 text-destructive hover:bg-destructive/30'
+                    ? 'bg-destructive/10 text-destructive hover:bg-destructive/20'
                     : 'bg-accent text-accent-foreground hover:opacity-90'
             }`}
         >
           {status === 'JOINED'
-            ? 'Joined'
+            ? "I'm going!"
             : status === 'REQUESTED'
-              ? 'Requested'
+              ? 'Requested!'
               : status === 'REJECTED'
                 ? 'Request Again'
                 : 'Request to Join'}
