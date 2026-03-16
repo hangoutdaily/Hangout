@@ -356,7 +356,7 @@ export default function ProfileView({
               />
             )}
             {profile.city && (
-              <ProfileInfoItem icon={MapPin} label="Lives in" value={`${profile.city}, India`} />
+              <ProfileInfoItem icon={MapPin} label="Lives in" value={`${profile.city}`} />
             )}
             {profile.lookingFor && (
               <ProfileInfoItem icon={SearchCheck} label="Here For" value={profile.lookingFor} />
