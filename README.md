@@ -52,3 +52,4 @@
 3. Use fetch for server-side calls (keep Axios only for client stuff like actions)
 4. Replace <img> with next/image for better performance
 5. Lazy load Google Maps (next/dynamic, no SSR) to avoid heavy JS on initial load
+6. Debounce for search hangouts
