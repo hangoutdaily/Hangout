@@ -38,6 +38,13 @@
 - **AWS S3** — bucket name and region from env vars
 - All files stored under `profiles/` prefix
 
+### **Cache**
+
+- I used React Query to manage server state like events, categories, and likes.
+- I structured queries with meaningful keys like ['events', filters] so different filtered results are cached independently.
+- I configured staleTime to reduce unnecessary API calls and used mutations with query invalidation to keep data consistent after actions like liking an event.
+- This allowed me to avoid manual state management and ensured better performance and UX.”
+
 ### **Perf Improvements TODO**
 
 1. Move auth from localStorage → HttpOnly cookies (so SSR can actually work for logged-in users)
