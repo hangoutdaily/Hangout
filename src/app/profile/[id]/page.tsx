@@ -1,5 +1,3 @@
-'use client';
-
 import { use } from 'react';
 import ProfileScreen from '@/app/profile/[id]/components/ProfileScreen';
 
