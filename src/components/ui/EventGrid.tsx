@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useContext } from 'react';
+import { useState, useContext, useMemo } from 'react';
 import { useSearchParams } from 'next/navigation';
 import EventCard from './EventCard';
 import { useEvents, useLikeMutation, useUnlikeMutation } from '@/hooks/useEvents';
@@ -55,8 +55,6 @@ export default function EventGrid() {
   const { data: eventsData, isLoading: eventsLoading } = useEvents({
     search,
     category,
-    time,
-    date,
   });
   const { data: likesData } = useMyLikes();
   const { data: joinedData } = useMyJoinedEvents();
@@ -70,7 +68,38 @@ export default function EventGrid() {
   const [unjoinDialogFor, setUnjoinDialogFor] = useState<number | null>(null);
   const { user } = useContext(AuthContext);
 
-  const events = eventsData?.events || [];
+  const events = useMemo(() => eventsData?.events || [], [eventsData?.events]);
+  const filteredEvents = useMemo(() => {
+    return events.filter((event: FetchedEvent) => {
+      const eventDateTime = new Date(event.datetime);
+
+      if (date) {
+        const [y, m, d] = date.split('-').map(Number);
+        if (
+          Number.isFinite(y) &&
+          Number.isFinite(m) &&
+          Number.isFinite(d) &&
+          (eventDateTime.getFullYear() !== y ||
+            eventDateTime.getMonth() + 1 !== m ||
+            eventDateTime.getDate() !== d)
+        ) {
+          return false;
+        }
+      }
+
+      if (time) {
+        const hour = eventDateTime.getHours();
+        const matchesTime =
+          (time === 'morning' && hour >= 5 && hour < 12) ||
+          (time === 'afternoon' && hour >= 12 && hour < 17) ||
+          (time === 'evening' && hour >= 17 && hour < 21) ||
+          (time === 'night' && (hour >= 21 || hour < 5));
+        if (!matchesTime) return false;
+      }
+
+      return true;
+    });
+  }, [events, date, time]);
   const loading = eventsLoading;
 
   const likedEvents = new Set(likesData?.likedEventIds?.map(String) || []);
@@ -103,7 +132,7 @@ export default function EventGrid() {
     );
   }
 
-  if (events.length === 0) {
+  if (filteredEvents.length === 0) {
     return (
       <div className="mx-auto max-w-7xl px-4 text-center text-muted-foreground">
         No hangouts found.
@@ -134,7 +163,7 @@ export default function EventGrid() {
       />
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {events.map((event: FetchedEvent) => {
+        {filteredEvents.map((event: FetchedEvent) => {
           const idStr = String(event.id);
           let status = joinStatus[idStr] || 'NONE';
           const isHost = isHostOfEvent(user, event.host?.id);

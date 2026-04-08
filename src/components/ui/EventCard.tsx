@@ -60,7 +60,7 @@ export default function EventCard({
     <Link
       href={`/events/${id}`}
       className={cn(
-        'flex flex-col h-full rounded-xl overflow-hidden border border-border bg-card transition-all duration-300 relative group',
+        'flex flex-col h-full rounded-3xl overflow-hidden border border-border bg-card transition-all duration-300 relative group',
         isDone || isCancelled
           ? 'bg-secondary/20 hover:bg-secondary/30'
           : 'hover:shadow-md hover:border-accent/30'

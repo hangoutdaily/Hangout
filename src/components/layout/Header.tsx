@@ -28,18 +28,18 @@ import MobileNav from './MobileNav';
 import { useScrollDirection } from '@/hooks/useScrollDirection';
 
 const placeholders = [
-  'Search "Midnight Walk"',
-  'Search "Chai and gossip"',
-  'Search "Dmart Together?"',
-  'Search "Gully Cricket"',
-  'Search "Board Game Night"',
-  'Search "Birthday Crashers"',
-  'Search "No Phone Hangout"',
-  'Search "Street Food Hunt"',
-  'Search "Sunset Talks"',
-  'Search "Badminton Match"',
-  'Search "Try Matcha Together?"',
-  'Search "Mystery Dinner"',
+  '"Midnight Walk"',
+  '"Chai and gossip"',
+  '"Dmart Together?"',
+  '"Gully Cricket"',
+  '"Board Game Night"',
+  '"Birthday Crashers"',
+  '"No Phone Hangout"',
+  '"Street Food Hunt"',
+  '"Sunset Talks"',
+  '"Badminton Match"',
+  '"Try Matcha Together?"',
+  '"Mystery Dinner"',
 ];
 
 export default function Header() {
@@ -222,18 +222,21 @@ export default function Header() {
               />
               {!searchValue && (
                 <div className="absolute top-0 left-11 bottom-0 right-5 flex items-center pointer-events-none overflow-hidden">
-                  <AnimatePresence mode="popLayout">
-                    <motion.span
-                      key={placeholderIndex}
-                      initial={{ y: 20, opacity: 0 }}
-                      animate={{ y: 0, opacity: 1 }}
-                      exit={{ y: -20, opacity: 0 }}
-                      transition={{ duration: 0.3, ease: 'easeOut' }}
-                      className="text-muted-foreground text-[15px] absolute"
-                    >
-                      {placeholders[placeholderIndex]}
-                    </motion.span>
-                  </AnimatePresence>
+                  <span className="text-muted-foreground text-[15px] mr-1">Search</span>
+                  <span className="relative inline-block min-w-[180px] h-[22px]">
+                    <AnimatePresence mode="popLayout">
+                      <motion.span
+                        key={placeholderIndex}
+                        initial={{ y: 20, opacity: 0 }}
+                        animate={{ y: 0, opacity: 1 }}
+                        exit={{ y: -20, opacity: 0 }}
+                        transition={{ duration: 0.3, ease: 'easeOut' }}
+                        className="text-muted-foreground text-[15px] absolute left-0 top-1/2 -translate-y-1/2"
+                      >
+                        {placeholders[placeholderIndex]}
+                      </motion.span>
+                    </AnimatePresence>
+                  </span>
                 </div>
               )}
             </div>
@@ -362,18 +365,21 @@ export default function Header() {
             />
             {!searchValue && (
               <div className="absolute top-0 left-12 bottom-0 right-4 flex items-center pointer-events-none overflow-hidden">
-                <AnimatePresence mode="popLayout">
-                  <motion.span
-                    key={placeholderIndex}
-                    initial={{ y: 20, opacity: 0 }}
-                    animate={{ y: 0, opacity: 1 }}
-                    exit={{ y: -20, opacity: 0 }}
-                    transition={{ duration: 0.3, ease: 'easeOut' }}
-                    className="text-muted-foreground text-[16px] absolute"
-                  >
-                    {placeholders[placeholderIndex]}
-                  </motion.span>
-                </AnimatePresence>
+                <span className="text-muted-foreground text-[16px] mr-1">Search</span>
+                <span className="relative inline-block min-w-[190px] h-[24px]">
+                  <AnimatePresence mode="popLayout">
+                    <motion.span
+                      key={placeholderIndex}
+                      initial={{ y: 20, opacity: 0 }}
+                      animate={{ y: 0, opacity: 1 }}
+                      exit={{ y: -20, opacity: 0 }}
+                      transition={{ duration: 0.3, ease: 'easeOut' }}
+                      className="text-muted-foreground text-[16px] absolute left-0 top-1/2 -translate-y-1/2"
+                    >
+                      {placeholders[placeholderIndex]}
+                    </motion.span>
+                  </AnimatePresence>
+                </span>
               </div>
             )}
           </div>
