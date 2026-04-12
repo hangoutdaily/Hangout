@@ -12,6 +12,7 @@ import {
   Loader2,
   LocateFixed,
   ArrowLeft,
+  ImagePlus,
 } from 'lucide-react';
 import { GoogleMap, Marker, useLoadScript } from '@react-google-maps/api';
 import { Field, FieldInput, FieldTextarea, FieldSelect } from '@/components/ui/FormField';
@@ -22,6 +23,7 @@ import { DatePicker } from '@/app/create/components/DatePicker';
 import { TimePicker } from '@/app/create/components/TimePicker';
 import { ApiError } from '@/types';
 import Link from 'next/link';
+import CoverImagePicker from '@/components/ui/CoverImagePicker';
 
 const LIBRARIES: ('places' | 'geometry')[] = ['places', 'geometry'];
 const DEFAULT_CENTER = { lat: 23.2156, lng: 72.6369 };
@@ -51,6 +53,7 @@ interface EventForm {
   maxAttendees: string;
   priceType: PriceType | '';
   geo: GeoLocation | null;
+  coverImage: string;
 }
 
 function formatCategoryName(enumValue: string): string {
@@ -79,6 +82,7 @@ export default function EditEventForm({ id }: { id: string }) {
     maxAttendees: '',
     priceType: '',
     geo: null,
+    coverImage: '',
   });
 
   const [categories, setCategories] = useState<string[]>([]);
@@ -89,6 +93,7 @@ export default function EditEventForm({ id }: { id: string }) {
   const [isLoading, setIsLoading] = useState(true);
   const [isUpdating, setIsUpdating] = useState(false);
   const [generalError, setGeneralError] = useState<string | null>(null);
+  const [hasInitialCoverImage, setHasInitialCoverImage] = useState(false);
 
   const [mapCenter, setMapCenter] = useState(DEFAULT_CENTER);
 
@@ -112,6 +117,7 @@ export default function EditEventForm({ id }: { id: string }) {
 
         const ev = eventRes.data.event;
         setCurrentJoinedCount(ev.attendees.length);
+        setHasInitialCoverImage(Boolean(ev.photos?.[0]));
         const dt = new Date(ev.datetime);
         const dateStr = `${String(dt.getDate()).padStart(2, '0')}/${String(dt.getMonth() + 1).padStart(2, '0')}/${dt.getFullYear()}`;
         const timeStr = `${String(dt.getHours()).padStart(2, '0')}:${String(dt.getMinutes()).padStart(2, '0')}`;
@@ -132,6 +138,7 @@ export default function EditEventForm({ id }: { id: string }) {
           maxAttendees: String(ev.maxAttendees),
           priceType: ev.priceType,
           geo: ev.geo || null,
+          coverImage: ev.photos?.[0] || '',
         });
 
         if (ev.geo) {
@@ -255,6 +262,7 @@ export default function EditEventForm({ id }: { id: string }) {
         maxAttendees: Number(form.maxAttendees),
         priceType: form.priceType,
         geo: form.geo,
+        photos: form.coverImage ? [form.coverImage] : undefined,
       };
 
       await updateEvent(id, payload);
@@ -313,6 +321,22 @@ export default function EditEventForm({ id }: { id: string }) {
             error={!!errors.description}
           />
         </Field>
+
+        <div className="space-y-2">
+          <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+            <ImagePlus className="h-4 w-4 text-accent" />
+            Cover Image
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Change the hangout cover anytime and search Unsplash to match your vibe.
+          </p>
+          <CoverImagePicker
+            category={categoryMap[form.category] || ''}
+            selectedImage={form.coverImage}
+            onSelectImage={(imageUrl) => update('coverImage', imageUrl)}
+            lockAutoSelection={hasInitialCoverImage}
+          />
+        </div>
       </Section>
 
       <Section

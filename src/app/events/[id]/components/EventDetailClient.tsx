@@ -48,6 +48,11 @@ import { cn } from '@/lib/utils';
 import { GoogleMap, Marker, useLoadScript } from '@react-google-maps/api';
 import { Separator } from '@/components/ui/shadcn/separator';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/shadcn/dialog';
+import {
+  getCategoryImageQuery,
+  getUnsplashSourceImage,
+  searchUnsplashPhotos,
+} from '@/lib/unsplash';
 
 function WhatsAppIcon({ className }: { className?: string }) {
   return (
@@ -104,7 +109,7 @@ type EventDetail = {
   maxAttendees: number;
   category: string;
   priceType: 'FREE' | 'SPLIT_BILL';
-  photos: string[];
+  photos?: string[];
   geo?: GeoLocation;
   host: {
     id: number;
@@ -128,60 +133,6 @@ type JoinRequest = {
     displayId: string | null;
     photos?: string[];
   };
-};
-
-const categories = [
-  'movies',
-  'sports',
-  'walk',
-  'run',
-  'coffee_tea',
-  'travel',
-  'share_ride',
-  'lunch',
-  'dinner',
-  'brunch',
-  'reading',
-  'volunteering',
-  'comedy',
-  'games',
-  'clubbing',
-  'fests_fairs',
-  'sightseeing',
-  'nightlife',
-  'meetup',
-  'other',
-] as const;
-
-type CategoryKey = (typeof categories)[number];
-
-const CATEGORY_IMAGES: Record<CategoryKey, string> = {
-  movies: '/assets/movie.png',
-  sports: '/assets/sports.png',
-  walk: '/assets/walk.png',
-  run: '/assets/walk.png',
-  coffee_tea: '/assets/coffee.png',
-  travel: '/assets/travel.png',
-  share_ride: '/assets/travel.png',
-  lunch: '/assets/food.png',
-  dinner: '/assets/food.png',
-  brunch: '/assets/food.png',
-  reading: '/assets/reading.png',
-  volunteering: '/assets/volunteering.png',
-  comedy: '/assets/comedy.png',
-  games: '/assets/games.png',
-  clubbing: '/assets/clubbing.png',
-  fests_fairs: '/assets/fair.png',
-  sightseeing: '/assets/fair.png',
-  nightlife: '/assets/night-life.png',
-  meetup: '/assets/games.png',
-  other: '/assets/fair.png',
-};
-
-const getCoverImage = (event: EventDetail) => {
-  if (event.photos?.length) return event.photos[0];
-  const key = event.category.toLowerCase() as CategoryKey;
-  return CATEGORY_IMAGES[key] || '/assets/fair.png';
 };
 
 const formatCategory = (cat: string) => {
@@ -211,6 +162,7 @@ export default function EventDetailClient({ id }: EventDetailClientProps) {
   const [joinRequests, setJoinRequests] = useState<JoinRequest[]>([]);
   const [requestsLoading, setRequestsLoading] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [fallbackCoverImage, setFallbackCoverImage] = useState<string | null>(null);
 
   useEffect(() => {
     if (toastMessage) {
@@ -235,6 +187,21 @@ export default function EventDetailClient({ id }: EventDetailClientProps) {
         const res = await getEvent(id);
         const ev: EventDetail = res.data.event;
         setEvent(ev);
+
+        if (!ev.photos?.length) {
+          const categoryQuery = getCategoryImageQuery(ev.category);
+          setFallbackCoverImage(getUnsplashSourceImage(categoryQuery));
+          try {
+            const suggestions = await searchUnsplashPhotos({ query: categoryQuery, perPage: 1 });
+            if (suggestions[0]) {
+              setFallbackCoverImage(suggestions[0].regularUrl);
+            }
+          } catch (err) {
+            console.error('Failed to fetch Unsplash cover suggestion', err);
+          }
+        } else {
+          setFallbackCoverImage(null);
+        }
 
         if (!user) return;
 
@@ -401,7 +368,10 @@ export default function EventDetailClient({ id }: EventDetailClientProps) {
   const isHost = user?.profileId === event.host.id;
   const eventDate = new Date(event.datetime);
   const attendeesCount = event.attendees.length;
-  const coverImage = getCoverImage(event);
+  const coverImage =
+    event.photos?.[0] ||
+    fallbackCoverImage ||
+    getUnsplashSourceImage(getCategoryImageQuery(event.category));
 
   const isPast = eventDate < new Date();
   const isFull = attendeesCount >= event.maxAttendees;
