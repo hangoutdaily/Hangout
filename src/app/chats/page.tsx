@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useContext } from 'react';
+import { useState, useContext, useMemo, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MessageCircle, Archive, Inbox } from 'lucide-react';
 import { getMyChats } from '@/api/chat';
@@ -10,12 +11,33 @@ import { AuthContext } from '@/context/AuthContext';
 import { ChatRoomCard } from '@/types';
 import Link from 'next/link';
 import { Button } from '@/components/ui/shadcn/button';
+import { useSocket } from '@/providers/SocketProvider';
 
 type Tab = 'active' | 'archived';
+
+type MyChatsResponse = { active: ChatRoomCard[]; archived: ChatRoomCard[] };
+
+function shouldArchiveChat(chat: ChatRoomCard) {
+  const isEventDone = new Date(chat.eventDatetime) < new Date();
+
+  return (
+    chat.isRemoved ||
+    chat.roomStatus === 'ARCHIVED' ||
+    chat.eventStatus === 'COMPLETED' ||
+    chat.eventStatus === 'CANCELLED' ||
+    isEventDone
+  );
+}
+
+function getChatSortTimestamp(chat: ChatRoomCard) {
+  return new Date(chat.lastMessage?.createdAt || chat.eventDatetime).getTime();
+}
 
 export default function ChatsPage() {
   const [activeTab, setActiveTab] = useState<Tab>('active');
   const { user } = useContext(AuthContext);
+  const { socket } = useSocket();
+  const queryClient = useQueryClient();
 
   const { data, isLoading } = useQuery({
     queryKey: ['myChats'],
@@ -26,9 +48,78 @@ export default function ChatsPage() {
     enabled: !!user,
   });
 
-  const active = data?.active || [];
-  const archived = data?.archived || [];
+  const { active, archived } = useMemo(() => {
+    const merged = [...(data?.active || []), ...(data?.archived || [])];
+    const byEventId = new Map<number, ChatRoomCard>();
+
+    // Deduplicate in case the API includes an event in both buckets.
+    // Archived payload comes after active payload and takes precedence when duplicated.
+    for (const chat of merged) {
+      byEventId.set(chat.eventId, chat);
+    }
+
+    const dedupedChats = Array.from(byEventId.values()).sort(
+      (a, b) => getChatSortTimestamp(b) - getChatSortTimestamp(a)
+    );
+
+    return {
+      active: dedupedChats.filter((chat) => !shouldArchiveChat(chat)),
+      archived: dedupedChats.filter((chat) => shouldArchiveChat(chat)),
+    };
+  }, [data?.active, data?.archived]);
+
   const currentList = activeTab === 'active' ? active : archived;
+
+  useEffect(() => {
+    if (!socket || !user) return;
+
+    const patchChatCache = (eventId: number, updater: (chat: ChatRoomCard) => ChatRoomCard) => {
+      queryClient.setQueryData<MyChatsResponse>(['myChats'], (current) => {
+        if (!current) return current;
+
+        const patch = (list: ChatRoomCard[]) =>
+          list.map((chat) => (chat.eventId === eventId ? updater(chat) : chat));
+
+        return {
+          active: patch(current.active),
+          archived: patch(current.archived),
+        };
+      });
+    };
+
+    const handleRoomArchived = (data: {
+      eventId: number;
+      eventStatus?: ChatRoomCard['eventStatus'];
+    }) => {
+      if (!Number.isFinite(data?.eventId)) return;
+
+      patchChatCache(data.eventId, (chat) => ({
+        ...chat,
+        roomStatus: 'ARCHIVED',
+        eventStatus: data.eventStatus || chat.eventStatus,
+      }));
+      queryClient.invalidateQueries({ queryKey: ['myChats'] });
+    };
+
+    const handleRemovedFromChat = (data: { eventId: number }) => {
+      if (!Number.isFinite(data?.eventId)) return;
+
+      patchChatCache(data.eventId, (chat) => ({
+        ...chat,
+        isRemoved: true,
+        roomStatus: 'ARCHIVED',
+      }));
+      queryClient.invalidateQueries({ queryKey: ['myChats'] });
+    };
+
+    socket.on('room_archived', handleRoomArchived);
+    socket.on('removed_from_chat', handleRemovedFromChat);
+
+    return () => {
+      socket.off('room_archived', handleRoomArchived);
+      socket.off('removed_from_chat', handleRemovedFromChat);
+    };
+  }, [queryClient, socket, user]);
 
   if (!user) {
     return (

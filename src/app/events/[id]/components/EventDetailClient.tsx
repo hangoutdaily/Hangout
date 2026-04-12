@@ -24,6 +24,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useRouter } from 'next/navigation';
+import { useQueryClient } from '@tanstack/react-query';
 import {
   cancelJoinEvent,
   getEvent,
@@ -53,6 +54,7 @@ import {
   getUnsplashSourceImage,
   searchUnsplashPhotos,
 } from '@/lib/unsplash';
+import { ChatRoomCard } from '@/types';
 
 function WhatsAppIcon({ className }: { className?: string }) {
   return (
@@ -135,6 +137,27 @@ type JoinRequest = {
   };
 };
 
+type MyChatsResponse = {
+  active: ChatRoomCard[];
+  archived: ChatRoomCard[];
+};
+
+function patchMyChatsCache(
+  current: MyChatsResponse | undefined,
+  eventId: number,
+  update: (chat: ChatRoomCard) => ChatRoomCard
+) {
+  if (!current) return current;
+
+  const patch = (list: ChatRoomCard[]) =>
+    list.map((chat) => (chat.eventId === eventId ? update(chat) : chat));
+
+  return {
+    active: patch(current.active),
+    archived: patch(current.archived),
+  };
+}
+
 const formatCategory = (cat: string) => {
   return cat
     .split('_')
@@ -144,6 +167,7 @@ const formatCategory = (cat: string) => {
 
 export default function EventDetailClient({ id }: EventDetailClientProps) {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const { user } = useContext(AuthContext);
   const [event, setEvent] = useState<EventDetail | null>(null);
   const [loading, setLoading] = useState(true);
@@ -267,6 +291,14 @@ export default function EventDetailClient({ id }: EventDetailClientProps) {
     try {
       await cancelHostedEvent(event.id);
       setEvent({ ...event, status: 'CANCELLED' });
+      queryClient.setQueryData<MyChatsResponse>(['myChats'], (current) =>
+        patchMyChatsCache(current, event.id, (chat) => ({
+          ...chat,
+          eventStatus: 'CANCELLED',
+          roomStatus: 'ARCHIVED',
+        }))
+      );
+      queryClient.invalidateQueries({ queryKey: ['myChats'] });
       setToastMessage('Hangout has been cancelled.');
       setShowCancelDialog(false);
     } catch (e) {
@@ -386,11 +418,7 @@ export default function EventDetailClient({ id }: EventDetailClientProps) {
         'w-full font-medium text-base h-12 transition-all rounded-xl',
         isCancelled || isPast || isCompleted
           ? 'bg-muted text-muted-foreground cursor-not-allowed hover:bg-muted'
-          : requestStatus === 'JOINED'
-            ? 'bg-green-600 hover:bg-green-700 text-white'
-            : requestStatus === 'REQUESTED'
-              ? 'bg-indigo-600 hover:bg-indigo-700 text-white'
-              : 'bg-foreground text-background hover:bg-foreground/90'
+          : 'bg-black text-white hover:bg-black/90 dark:bg-foreground dark:text-background dark:hover:bg-foreground/90'
       )}
       disabled={isHost || isCancelled || isPast || (isFull && requestStatus === 'NONE')}
       onClick={() => {
@@ -862,6 +890,14 @@ export default function EventDetailClient({ id }: EventDetailClientProps) {
         onClose={() => setShowUnjoinDialog(false)}
         onConfirm={async () => {
           await cancelJoinEvent(event.id);
+          queryClient.setQueryData<MyChatsResponse>(['myChats'], (current) =>
+            patchMyChatsCache(current, event.id, (chat) => ({
+              ...chat,
+              isRemoved: true,
+              roomStatus: 'ARCHIVED',
+            }))
+          );
+          queryClient.invalidateQueries({ queryKey: ['myChats'] });
           setRequestStatus('NONE');
           setShowUnjoinDialog(false);
         }}

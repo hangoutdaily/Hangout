@@ -32,6 +32,7 @@ export const useJoinMutation = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['my-joined'] });
       queryClient.invalidateQueries({ queryKey: ['events'] });
+      queryClient.invalidateQueries({ queryKey: ['myChats'] });
     },
   });
 };
@@ -44,6 +45,7 @@ export const useCancelJoinMutation = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['my-joined'] });
       queryClient.invalidateQueries({ queryKey: ['events'] });
+      queryClient.invalidateQueries({ queryKey: ['myChats'] });
     },
   });
 };
