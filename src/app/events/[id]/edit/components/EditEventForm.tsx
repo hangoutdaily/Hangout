@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -24,6 +24,7 @@ import { TimePicker } from '@/app/create/components/TimePicker';
 import { ApiError } from '@/types';
 import Link from 'next/link';
 import CoverImagePicker from '@/components/ui/CoverImagePicker';
+import { notifyHangoutUpdated } from '@/lib/notificationActivity';
 
 const LIBRARIES: ('places' | 'geometry')[] = ['places', 'geometry'];
 const DEFAULT_CENTER = { lat: 23.2156, lng: 72.6369 };
@@ -56,10 +57,49 @@ interface EventForm {
   coverImage: string;
 }
 
+interface EventSnapshot {
+  title: string;
+  description: string;
+  category: string;
+  city: string;
+  state: string;
+  addressLine: string;
+  datetime: string;
+  maxAttendees: number;
+  priceType: PriceType | '';
+  coverImage: string;
+}
+
 function formatCategoryName(enumValue: string): string {
   return enumValue
     .replace(/_/g, ' ')
     .replace(/\w\S*/g, (txt) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase());
+}
+
+function getChangedFields(previous: EventSnapshot, next: EventSnapshot): string[] {
+  const changes: string[] = [];
+
+  if (previous.title.trim() !== next.title.trim()) changes.push('title');
+  if (previous.description.trim() !== next.description.trim()) changes.push('description');
+  if (previous.category !== next.category) changes.push('category');
+
+  const previousTime = new Date(previous.datetime).getTime();
+  const nextTime = new Date(next.datetime).getTime();
+  if (previousTime !== nextTime) changes.push('date and time');
+
+  if (
+    previous.city.trim() !== next.city.trim() ||
+    previous.state.trim() !== next.state.trim() ||
+    previous.addressLine.trim() !== next.addressLine.trim()
+  ) {
+    changes.push('location');
+  }
+
+  if (previous.maxAttendees !== next.maxAttendees) changes.push('capacity');
+  if (previous.priceType !== next.priceType) changes.push('pricing');
+  if (previous.coverImage !== next.coverImage) changes.push('cover image');
+
+  return changes;
 }
 
 export default function EditEventForm({ id }: { id: string }) {
@@ -94,6 +134,7 @@ export default function EditEventForm({ id }: { id: string }) {
   const [isUpdating, setIsUpdating] = useState(false);
   const [generalError, setGeneralError] = useState<string | null>(null);
   const [hasInitialCoverImage, setHasInitialCoverImage] = useState(false);
+  const [initialSnapshot, setInitialSnapshot] = useState<EventSnapshot | null>(null);
 
   const [mapCenter, setMapCenter] = useState(DEFAULT_CENTER);
 
@@ -144,7 +185,20 @@ export default function EditEventForm({ id }: { id: string }) {
         if (ev.geo) {
           setMapCenter(ev.geo);
         }
-      } catch (err) {
+
+        setInitialSnapshot({
+          title: ev.title || '',
+          description: ev.description || '',
+          category: ev.category || '',
+          city: ev.city || '',
+          state: ev.state || '',
+          addressLine: ev.addressLine || '',
+          datetime: ev.datetime,
+          maxAttendees: Number(ev.maxAttendees || 0),
+          priceType: ev.priceType || '',
+          coverImage: ev.photos?.[0] || '',
+        });
+      } catch {
         setGeneralError('Failed to load hangout details.');
       } finally {
         setIsLoading(false);
@@ -175,17 +229,17 @@ export default function EditEventForm({ id }: { id: string }) {
     return () => clearTimeout(timeOutId);
   }, [form.addressLine, form.city, form.state, isLoaded]);
 
-  const onMapClick = useCallback((e: google.maps.MapMouseEvent) => {
+  function onMapClick(e: google.maps.MapMouseEvent) {
     if (e.latLng) {
       update('geo', { lat: e.latLng.lat(), lng: e.latLng.lng() });
     }
-  }, []);
+  }
 
-  const onMarkerDragEnd = useCallback((e: google.maps.MapMouseEvent) => {
+  function onMarkerDragEnd(e: google.maps.MapMouseEvent) {
     if (e.latLng) {
       update('geo', { lat: e.latLng.lat(), lng: e.latLng.lng() });
     }
-  }, []);
+  }
 
   const requiredFields: (keyof EventForm)[] = [
     'title',
@@ -265,7 +319,32 @@ export default function EditEventForm({ id }: { id: string }) {
         photos: form.coverImage ? [form.coverImage] : undefined,
       };
 
+      const nextSnapshot: EventSnapshot = {
+        title: form.title,
+        description: form.description,
+        category: categoryMap[form.category] || '',
+        city: form.city,
+        state: form.state,
+        addressLine: form.addressLine,
+        datetime: datetime.toISOString(),
+        maxAttendees: Number(form.maxAttendees),
+        priceType: form.priceType,
+        coverImage: form.coverImage || '',
+      };
+
+      const changedFields = initialSnapshot ? getChangedFields(initialSnapshot, nextSnapshot) : [];
+
       await updateEvent(id, payload);
+
+      const numericEventId = Number(id);
+      if (!Number.isNaN(numericEventId)) {
+        notifyHangoutUpdated({
+          eventId: numericEventId,
+          eventTitle: form.title,
+          changedFields,
+        });
+      }
+
       router.push(`/events/${id}`);
     } catch (err) {
       const error = err as ApiError;

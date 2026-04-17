@@ -2,6 +2,7 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import * as eventApi from '@/api/event';
+import { notifyJoinRequestSubmitted } from '@/lib/notificationActivity';
 
 export const useMyLikes = () => {
   return useQuery({
@@ -29,7 +30,11 @@ export const useJoinMutation = () => {
   return useMutation({
     mutationFn: ({ id, message }: { id: string | number; message: string }) =>
       eventApi.joinEvent(id, message),
-    onSuccess: () => {
+    onSuccess: (_, variables) => {
+      const eventId = Number(variables.id);
+      if (!Number.isNaN(eventId)) {
+        notifyJoinRequestSubmitted({ eventId, message: variables.message });
+      }
       queryClient.invalidateQueries({ queryKey: ['my-joined'] });
       queryClient.invalidateQueries({ queryKey: ['events'] });
       queryClient.invalidateQueries({ queryKey: ['myChats'] });

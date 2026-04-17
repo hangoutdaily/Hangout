@@ -3,29 +3,15 @@
 import { usePathname, useRouter } from 'next/navigation';
 import { useState, useRef, useEffect, useContext } from 'react';
 import Link from 'next/link';
-import {
-  MapPin,
-  Bell,
-  Home,
-  Users,
-  MessageCircle,
-  Heart,
-  PlusSquare,
-  Search,
-  Settings,
-  Sun,
-  Moon,
-  Monitor,
-  LogOut,
-} from 'lucide-react';
+import { MapPin, Bell, Heart, Search, Settings, Sun, Moon, Monitor, LogOut } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import ThemeToggle from '@/components/ui/ThemeToggle';
 import { cn } from '@/lib/utils';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/shadcn/avatar';
 import { AuthContext } from '@/context/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
-import MobileNav from './MobileNav';
 import { useScrollDirection } from '@/hooks/useScrollDirection';
+import { useUnreadNotificationsCount } from '@/hooks/useNotifications';
 
 const placeholders = [
   '"Midnight Walk"',
@@ -54,6 +40,7 @@ export default function Header() {
   const { theme, setTheme } = useTheme();
   const router = useRouter();
   const scrollDirection = useScrollDirection();
+  const { data: unreadCount = 0 } = useUnreadNotificationsCount(Boolean(user));
   const userCity = user?.profile?.city || 'Ahmedabad';
 
   const isHome = pathname === '/';
@@ -94,14 +81,6 @@ export default function Header() {
     { href: '/chats', label: 'Chats' },
   ];
 
-  const mobileNav = [
-    { href: '/', label: 'Home', icon: Home },
-    { href: '/my-hangouts', label: 'My Hangouts', icon: Heart },
-    { href: '/create', label: 'Create', icon: PlusSquare },
-    { href: '/chats', label: 'Chats', icon: MessageCircle },
-    { href: '/profile', label: 'Profile', icon: Users },
-  ];
-
   return (
     <header
       className={cn(
@@ -118,13 +97,18 @@ export default function Header() {
           {userCity}
         </div>
         <div className="flex items-center gap-2">
-          <button
+          <Link
             aria-label="Notifications"
-            className="p-2 rounded-md hover:bg-accent/10 transition"
-            onClick={() => setIsProfileOpen(!isProfileOpen)}
+            href="/notifications"
+            className="relative p-2 rounded-md hover:bg-accent/10 transition"
           >
             <Bell className="h-5 w-5 text-foreground" />
-          </button>
+            {unreadCount > 0 && (
+              <span className="absolute -top-1 -right-1 h-4 min-w-4 px-1 rounded-full bg-foreground text-background text-[10px] leading-4 text-center">
+                {unreadCount > 9 ? '9+' : unreadCount}
+              </span>
+            )}
+          </Link>
 
           {pathname === '/profile' && (
             <div className="relative" ref={settingsRef}>
@@ -256,6 +240,18 @@ export default function Header() {
                 className="hover:text-foreground transition-colors"
               >
                 <Heart className="h-5 w-5" />
+              </Link>
+              <Link
+                href="/notifications"
+                title="Notifications"
+                className="relative hover:text-foreground transition-colors"
+              >
+                <Bell className="h-5 w-5" />
+                {unreadCount > 0 && (
+                  <span className="absolute -top-1.5 -right-2 h-4 min-w-4 px-1 rounded-full bg-foreground text-background text-[10px] leading-4 text-center">
+                    {unreadCount > 9 ? '9+' : unreadCount}
+                  </span>
+                )}
               </Link>
             </nav>
           )}

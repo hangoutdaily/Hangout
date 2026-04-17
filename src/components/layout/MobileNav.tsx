@@ -3,21 +3,27 @@
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Home, Heart, PlusSquare, MessageCircle, Users } from 'lucide-react';
+import { useContext } from 'react';
+import { Home, Heart, PlusSquare, MessageCircle, Users, Bell } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useScrollDirection } from '@/hooks/useScrollDirection';
+import { AuthContext } from '@/context/AuthContext';
+import { useUnreadNotificationsCount } from '@/hooks/useNotifications';
 
 const mobileNavItems = [
   { href: '/', icon: Home },
   { href: '/my-hangouts', icon: Heart },
   { href: '/create', icon: PlusSquare, isSpecial: true },
   { href: '/chats', icon: MessageCircle },
+  { href: '/notifications', icon: Bell },
   { href: '/profile', icon: Users },
 ];
 
 export default function MobileNav() {
   const pathname = usePathname();
   const scrollDirection = useScrollDirection();
+  const { user } = useContext(AuthContext);
+  const { data: unreadCount = 0 } = useUnreadNotificationsCount(Boolean(user));
 
   // Hide nav inside individual chat rooms (e.g. /chats/123) and onboarding flows
   const isChatRoom = /^\/chats\/\d+/.test(pathname);
@@ -77,6 +83,11 @@ export default function MobileNav() {
                   )}
                 >
                   <Icon className="h-5 w-5" />
+                  {href === '/notifications' && unreadCount > 0 && (
+                    <span className="absolute -top-2 -right-2 h-4 min-w-4 px-1 rounded-full bg-foreground text-background text-[10px] leading-4 text-center font-medium">
+                      {unreadCount > 9 ? '9+' : unreadCount}
+                    </span>
+                  )}
                 </motion.div>
               </Link>
             );

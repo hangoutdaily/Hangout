@@ -7,6 +7,7 @@ import AuthProvider from '@/context/AuthContext';
 import ReactQueryProvider from '@/providers/ReactQueryProvider';
 import SocketProvider from '@/providers/SocketProvider';
 import GoogleAuthWrapper from '@/providers/GoogleAuthWrapper';
+import NotificationRealtimeBridge from '@/components/realtime/NotificationRealtimeBridge';
 
 export const metadata: Metadata = {
   title: 'Hangout',
@@ -27,6 +28,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <SocketProvider>
               <ThemeProvider>
                 <ReactQueryProvider>
+                  <NotificationRealtimeBridge />
                   <Header />
                   <MobileNav />
                   <main className="pb-16 md:pb-0 max-w-[100vw] overflow-x-hidden">{children}</main>

@@ -47,7 +47,6 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/shadcn/avat
 import { Badge } from '@/components/ui/shadcn/badge';
 import { cn } from '@/lib/utils';
 import { GoogleMap, Marker, useLoadScript } from '@react-google-maps/api';
-import { Separator } from '@/components/ui/shadcn/separator';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/shadcn/dialog';
 import {
   getCategoryImageQuery,
@@ -55,6 +54,11 @@ import {
   searchUnsplashPhotos,
 } from '@/lib/unsplash';
 import { ChatRoomCard } from '@/types';
+import {
+  notifyHangoutCancelled,
+  notifyJoinRequestApproved,
+  notifyJoinRequestSubmitted,
+} from '@/lib/notificationActivity';
 
 function WhatsAppIcon({ className }: { className?: string }) {
   return (
@@ -184,7 +188,6 @@ export default function EventDetailClient({ id }: EventDetailClientProps) {
   );
 
   const [joinRequests, setJoinRequests] = useState<JoinRequest[]>([]);
-  const [requestsLoading, setRequestsLoading] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [fallbackCoverImage, setFallbackCoverImage] = useState<string | null>(null);
 
@@ -256,14 +259,11 @@ export default function EventDetailClient({ id }: EventDetailClientProps) {
   }, [id, user]);
 
   const fetchJoinRequests = async (eventId: number) => {
-    setRequestsLoading(true);
     try {
       const res = await getEventJoinRequests(eventId);
       setJoinRequests(res.data.requests);
     } catch (e) {
       console.error('Failed to load requests', e);
-    } finally {
-      setRequestsLoading(false);
     }
   };
 
@@ -272,6 +272,11 @@ export default function EventDetailClient({ id }: EventDetailClientProps) {
     try {
       if (action === 'approve') {
         await approveJoinRequest(event.id, profileId);
+        notifyJoinRequestApproved({
+          eventId: event.id,
+          eventTitle: event.title,
+          targetProfileId: profileId,
+        });
         launchConfetti();
       } else {
         await rejectJoinRequest(event.id, profileId);
@@ -281,7 +286,7 @@ export default function EventDetailClient({ id }: EventDetailClientProps) {
         const res = await getEvent(id);
         setEvent(res.data.event);
       }
-    } catch (e) {
+    } catch {
       setToastMessage('Too popular! This hangout is full');
     }
   };
@@ -290,6 +295,7 @@ export default function EventDetailClient({ id }: EventDetailClientProps) {
     if (!event) return;
     try {
       await cancelHostedEvent(event.id);
+      notifyHangoutCancelled({ eventId: event.id, eventTitle: event.title });
       setEvent({ ...event, status: 'CANCELLED' });
       queryClient.setQueryData<MyChatsResponse>(['myChats'], (current) =>
         patchMyChatsCache(current, event.id, (chat) => ({
@@ -301,7 +307,7 @@ export default function EventDetailClient({ id }: EventDetailClientProps) {
       queryClient.invalidateQueries({ queryKey: ['myChats'] });
       setToastMessage('Hangout has been cancelled.');
       setShowCancelDialog(false);
-    } catch (e) {
+    } catch {
       setToastMessage('Failed to cancel hangout.');
     }
   };
@@ -310,8 +316,12 @@ export default function EventDetailClient({ id }: EventDetailClientProps) {
     const next = !isLiked;
     setIsLiked(next);
     try {
-      next ? await likeEvent(id) : await unlikeEvent(id);
-    } catch (err) {
+      if (next) {
+        await likeEvent(id);
+      } else {
+        await unlikeEvent(id);
+      }
+    } catch {
       setIsLiked(!next);
     }
   };
@@ -880,7 +890,10 @@ export default function EventDetailClient({ id }: EventDetailClientProps) {
         onClose={() => setShowJoinDialog(false)}
         onSubmit={async (message: string) => {
           await joinEvent(event.id, message);
+          notifyJoinRequestSubmitted({ eventId: event.id, eventTitle: event.title, message });
           setRequestStatus('REQUESTED');
+          queryClient.invalidateQueries({ queryKey: ['my-joined'] });
+          queryClient.invalidateQueries({ queryKey: ['events'] });
           setShowJoinDialog(false);
           launchConfetti();
         }}
