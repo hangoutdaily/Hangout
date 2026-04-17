@@ -18,7 +18,7 @@ import { useQueries } from '@tanstack/react-query';
 import * as eventApi from '@/api/event';
 import JoinEventDialog from '../layout/JoinEventDialog';
 import ConfirmUnjoinDialog from '../layout/ConfirmUnjoinDialog';
-import { isHostOfEvent } from '@/lib/utils';
+import { cn, isHostOfEvent } from '@/lib/utils';
 import { Button } from './shadcn/button';
 
 type FetchedEvent = {
@@ -196,21 +196,30 @@ export default function MyHangoutsGrid() {
         <Button
           variant={activeTab === 'UPCOMING' ? 'default' : 'outline'}
           onClick={() => setActiveTab('UPCOMING')}
-          className="rounded-full"
+          className={cn(
+            'rounded-full whitespace-nowrap',
+            activeTab !== 'UPCOMING' && 'border-border hover:border-foreground/30'
+          )}
         >
           Upcoming
         </Button>
         <Button
           variant={activeTab === 'WISHLIST' ? 'default' : 'outline'}
           onClick={() => setActiveTab('WISHLIST')}
-          className="rounded-full"
+          className={cn(
+            'rounded-full whitespace-nowrap',
+            activeTab !== 'WISHLIST' && 'border-border hover:border-foreground/30'
+          )}
         >
           Wishlist
         </Button>
         <Button
           variant={activeTab === 'REQUESTED' ? 'default' : 'outline'}
           onClick={() => setActiveTab('REQUESTED')}
-          className="rounded-full"
+          className={cn(
+            'rounded-full whitespace-nowrap',
+            activeTab !== 'REQUESTED' && 'border-border hover:border-foreground/30'
+          )}
         >
           Requested
         </Button>

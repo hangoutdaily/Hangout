@@ -191,18 +191,17 @@ export default function NotificationsPage() {
           className="flex gap-2 mb-2 overflow-x-auto pb-2 scrollbar-hide"
         >
           {filters.map((filter) => (
-            <button
+            <Button
               key={filter.value}
               onClick={() => setActiveFilter(filter.value)}
+              variant={activeFilter === filter.value ? 'default' : 'outline'}
               className={cn(
-                'rounded-full px-4 py-2 text-sm font-medium whitespace-nowrap transition-all duration-200',
-                activeFilter === filter.value
-                  ? 'bg-black text-white shadow-sm'
-                  : 'bg-white text-black border border-border hover:border-black/30'
+                'rounded-full whitespace-nowrap transition-all duration-200',
+                activeFilter !== filter.value && 'border-border hover:border-foreground/30'
               )}
             >
               {filter.label}
-            </button>
+            </Button>
           ))}
         </motion.div>
 
