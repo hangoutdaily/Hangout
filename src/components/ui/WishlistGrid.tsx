@@ -192,7 +192,7 @@ export default function MyHangoutsGrid() {
 
   return (
     <div className="mx-auto max-w-7xl px-4">
-      <div className="flex gap-2 mb-8 overflow-x-auto pb-2 scrollbar-hide">
+      <div className="flex gap-2 mb-8 overflow-x-auto scrollbar-hide">
         <Button
           variant={activeTab === 'UPCOMING' ? 'default' : 'outline'}
           onClick={() => setActiveTab('UPCOMING')}

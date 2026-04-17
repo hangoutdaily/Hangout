@@ -188,18 +188,17 @@ export default function NotificationsPage() {
           initial={{ opacity: 0, y: 6 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.2, delay: 0.04, ease: 'easeOut' }}
-          className="flex items-center gap-1.5 overflow-x-auto pb-0.5 scrollbar-hide"
+          className="flex gap-2 mb-2 overflow-x-auto pb-2 scrollbar-hide"
         >
           {filters.map((filter) => (
             <button
               key={filter.value}
-              type="button"
               onClick={() => setActiveFilter(filter.value)}
               className={cn(
-                'rounded-full px-3.5 py-1.5 text-xs font-medium border whitespace-nowrap transition-all duration-150',
+                'rounded-full px-4 py-2 text-sm font-medium whitespace-nowrap transition-all duration-200',
                 activeFilter === filter.value
-                  ? 'bg-foreground text-background border-foreground'
-                  : 'bg-transparent text-muted-foreground border-border hover:text-foreground hover:border-foreground/25'
+                  ? 'bg-black text-white shadow-sm'
+                  : 'bg-white text-black border border-border hover:border-black/30'
               )}
             >
               {filter.label}
@@ -236,14 +235,22 @@ export default function NotificationsPage() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.2, ease: 'easeOut' }}
-              className="rounded-2xl border border-dashed border-border p-12 text-center"
+              className="max-w-md mx-auto px-4 py-10 text-center"
             >
-              <p className="text-sm font-medium text-foreground">All clear</p>
-              <p className="text-xs text-muted-foreground mt-1">
-                New requests and updates will appear here.
+              <BellRing className="w-10 h-10 text-muted-foreground mx-auto mb-4" />
+
+              <h2 className="text-2xl font-bold mb-2">You&apos;re all caught up</h2>
+
+              <p className="text-muted-foreground mb-6">
+                No new notifications right now. Join hangouts or interact with others to see
+                activity here.
               </p>
-              <Button asChild className="mt-5 rounded-full px-5 h-8 text-xs">
-                <Link href="/">Explore hangouts</Link>
+
+              <Button
+                asChild
+                className="px-6 py-2.5 bg-primary text-primary-foreground rounded-lg font-semibold hover:bg-primary/90 transition-colors"
+              >
+                <Link href="/">Explore Hangouts</Link>
               </Button>
             </motion.div>
           ) : (
