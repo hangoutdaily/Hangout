@@ -20,6 +20,7 @@ import ConfirmUnjoinDialog from '../layout/ConfirmUnjoinDialog';
 import { cn, isHostOfEvent } from '@/lib/utils';
 import { Button } from './shadcn/button';
 import { EmptyState } from './EmptyState';
+import { ApiError } from '@/types';
 
 type FetchedEvent = {
   id: number;
@@ -59,6 +60,8 @@ export default function MyHangoutsGrid() {
 
   const [joinDialogFor, setJoinDialogFor] = useState<number | null>(null);
   const [unjoinDialogFor, setUnjoinDialogFor] = useState<number | null>(null);
+  const [joinErrorMessage, setJoinErrorMessage] = useState<string | null>(null);
+  const [isSubmittingJoin, setIsSubmittingJoin] = useState(false);
 
   const likedIds = new Set(likesData?.likedEventIds || []);
 
@@ -202,11 +205,27 @@ export default function MyHangoutsGrid() {
 
       <JoinEventDialog
         open={joinDialogFor !== null}
-        onClose={() => setJoinDialogFor(null)}
-        onSubmit={async (message) => {
-          const id = joinDialogFor!;
-          joinMutation.mutate({ id, message });
+        onClose={() => {
           setJoinDialogFor(null);
+          setJoinErrorMessage(null);
+        }}
+        isSubmitting={isSubmittingJoin}
+        errorMessage={joinErrorMessage}
+        onSubmit={async (message) => {
+          if (joinDialogFor == null) return;
+          setJoinErrorMessage(null);
+          setIsSubmittingJoin(true);
+          try {
+            await joinMutation.mutateAsync({ id: joinDialogFor, message });
+            setJoinDialogFor(null);
+          } catch (err) {
+            const error = err as ApiError;
+            setJoinErrorMessage(
+              error.response?.data?.error || 'Unable to send request right now. Please try again.'
+            );
+          } finally {
+            setIsSubmittingJoin(false);
+          }
         }}
       />
 
@@ -281,8 +300,10 @@ export default function MyHangoutsGrid() {
                 onJoin={() => {
                   if (!user) return (window.location.href = '/login');
                   if (isHost) return;
-                  if (status === 'NONE' || status === 'REJECTED') setJoinDialogFor(event.id);
-                  else setUnjoinDialogFor(event.id);
+                  if (status === 'NONE' || status === 'REJECTED') {
+                    setJoinErrorMessage(null);
+                    setJoinDialogFor(event.id);
+                  } else setUnjoinDialogFor(event.id);
                 }}
               />
             );

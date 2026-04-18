@@ -16,10 +16,18 @@ import { Textarea } from '@/components/ui/shadcn/textarea';
 interface JoinEventDialogProps {
   open: boolean;
   onClose: () => void;
-  onSubmit: (message: string) => void;
+  onSubmit: (message: string) => Promise<void>;
+  isSubmitting?: boolean;
+  errorMessage?: string | null;
 }
 
-export default function JoinEventDialog({ open, onClose, onSubmit }: JoinEventDialogProps) {
+export default function JoinEventDialog({
+  open,
+  onClose,
+  onSubmit,
+  isSubmitting = false,
+  errorMessage = null,
+}: JoinEventDialogProps) {
   const [message, setMessage] = useState('');
 
   return (
@@ -39,18 +47,20 @@ export default function JoinEventDialog({ open, onClose, onSubmit }: JoinEventDi
               value={message}
               onChange={(e) => setMessage(e.target.value)}
             />
+            {errorMessage && <p className="text-sm text-destructive">{errorMessage}</p>}
           </div>
           <DialogFooter>
             <DialogClose asChild>
               <Button variant="outline">Cancel</Button>
             </DialogClose>
             <Button
-              onClick={() => {
-                onSubmit(message);
+              disabled={isSubmitting}
+              onClick={async () => {
+                await onSubmit(message);
                 setMessage('');
               }}
             >
-              Send Request
+              {isSubmitting ? 'Sending...' : 'Send Request'}
             </Button>
           </DialogFooter>
         </DialogContent>

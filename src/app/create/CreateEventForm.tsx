@@ -266,7 +266,6 @@ export default function CreateEventForm() {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-8">
-      {generalError && <p className="text-sm text-destructive">{generalError}</p>}
       <Section icon={Tag} title="What’s the Plan?" subtitle="Set the vibe people sign up for">
         <Field label="Title" error={errors.title}>
           <FieldInput
@@ -451,10 +450,13 @@ export default function CreateEventForm() {
             </motion.p>
           )}
         </AnimatePresence>
-        <Button type="submit" className="font-semibold w-full sm:w-auto" disabled={isLoading}>
-          {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-          {isLoading ? 'Creating...' : 'Create Hangout'}
-        </Button>
+        <div className="flex flex-col gap-2 w-full sm:w-auto">
+          {generalError && <p className="text-sm text-destructive text-right">{generalError}</p>}
+          <Button type="submit" className="font-semibold w-full sm:w-auto" disabled={isLoading}>
+            {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            {isLoading ? 'Creating...' : 'Create Hangout'}
+          </Button>
+        </div>
       </motion.div>
     </form>
   );

@@ -16,6 +16,7 @@ import JoinEventDialog from '../layout/JoinEventDialog';
 import ConfirmUnjoinDialog from '../layout/ConfirmUnjoinDialog';
 import { isHostOfEvent } from '@/lib/utils';
 import { EmptyState } from './EmptyState';
+import { ApiError } from '@/types';
 
 export function formatCategory(cat: string) {
   return cat
@@ -67,6 +68,8 @@ export default function EventGrid() {
 
   const [joinDialogFor, setJoinDialogFor] = useState<number | null>(null);
   const [unjoinDialogFor, setUnjoinDialogFor] = useState<number | null>(null);
+  const [joinErrorMessage, setJoinErrorMessage] = useState<string | null>(null);
+  const [isSubmittingJoin, setIsSubmittingJoin] = useState(false);
   const { user } = useContext(AuthContext);
 
   const events = useMemo(() => eventsData?.events || [], [eventsData?.events]);
@@ -151,11 +154,27 @@ export default function EventGrid() {
     <div className="mx-auto max-w-7xl px-4">
       <JoinEventDialog
         open={joinDialogFor !== null}
-        onClose={() => setJoinDialogFor(null)}
-        onSubmit={async (message) => {
-          const id = joinDialogFor!;
-          joinMutation.mutate({ id, message });
+        onClose={() => {
           setJoinDialogFor(null);
+          setJoinErrorMessage(null);
+        }}
+        isSubmitting={isSubmittingJoin}
+        errorMessage={joinErrorMessage}
+        onSubmit={async (message) => {
+          if (joinDialogFor == null) return;
+          setJoinErrorMessage(null);
+          setIsSubmittingJoin(true);
+          try {
+            await joinMutation.mutateAsync({ id: joinDialogFor, message });
+            setJoinDialogFor(null);
+          } catch (err) {
+            const error = err as ApiError;
+            setJoinErrorMessage(
+              error.response?.data?.error || 'Unable to send request right now. Please try again.'
+            );
+          } finally {
+            setIsSubmittingJoin(false);
+          }
         }}
       />
 
@@ -208,8 +227,10 @@ export default function EventGrid() {
               onJoin={() => {
                 if (!user) return (window.location.href = '/login');
                 if (isHost) return;
-                if (status === 'NONE' || status === 'REJECTED') setJoinDialogFor(event.id);
-                else setUnjoinDialogFor(event.id);
+                if (status === 'NONE' || status === 'REJECTED') {
+                  setJoinErrorMessage(null);
+                  setJoinDialogFor(event.id);
+                } else setUnjoinDialogFor(event.id);
               }}
             />
           );

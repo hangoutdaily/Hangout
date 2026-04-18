@@ -63,6 +63,7 @@ export interface User {
   email: string;
   phone?: string;
   profileId?: number;
+  active?: boolean;
   profile?: {
     id: number;
     name?: string;

@@ -54,6 +54,7 @@ import {
   searchUnsplashPhotos,
 } from '@/lib/unsplash';
 import { ChatRoomCard } from '@/types';
+import { ApiError } from '@/types';
 import {
   notifyHangoutCancelled,
   notifyJoinRequestApproved,
@@ -180,6 +181,7 @@ export default function EventDetailClient({ id }: EventDetailClientProps) {
   const [showJoinDialog, setShowJoinDialog] = useState(false);
   const [showUnjoinDialog, setShowUnjoinDialog] = useState(false);
   const [showCancelDialog, setShowCancelDialog] = useState(false);
+  const [isSubmittingJoin, setIsSubmittingJoin] = useState(false);
 
   const [isShareOpen, setIsShareOpen] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
@@ -899,14 +901,25 @@ export default function EventDetailClient({ id }: EventDetailClientProps) {
       <JoinEventDialog
         open={showJoinDialog}
         onClose={() => setShowJoinDialog(false)}
+        isSubmitting={isSubmittingJoin}
         onSubmit={async (message: string) => {
-          await joinEvent(event.id, message);
-          notifyJoinRequestSubmitted({ eventId: event.id, eventTitle: event.title, message });
-          setRequestStatus('REQUESTED');
-          queryClient.invalidateQueries({ queryKey: ['my-joined'] });
-          queryClient.invalidateQueries({ queryKey: ['events'] });
-          setShowJoinDialog(false);
-          launchConfetti();
+          setIsSubmittingJoin(true);
+          try {
+            await joinEvent(event.id, message);
+            notifyJoinRequestSubmitted({ eventId: event.id, eventTitle: event.title, message });
+            setRequestStatus('REQUESTED');
+            queryClient.invalidateQueries({ queryKey: ['my-joined'] });
+            queryClient.invalidateQueries({ queryKey: ['events'] });
+            setShowJoinDialog(false);
+            launchConfetti();
+          } catch (err) {
+            const error = err as ApiError;
+            setToastMessage(
+              error.response?.data?.error || 'Unable to send request right now. Please try again.'
+            );
+          } finally {
+            setIsSubmittingJoin(false);
+          }
         }}
       />
       <ConfirmUnjoinDialog
