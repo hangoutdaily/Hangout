@@ -15,6 +15,7 @@ import { AuthContext } from '@/context/AuthContext';
 import JoinEventDialog from '../layout/JoinEventDialog';
 import ConfirmUnjoinDialog from '../layout/ConfirmUnjoinDialog';
 import { isHostOfEvent } from '@/lib/utils';
+import { EmptyState } from './EmptyState';
 
 export function formatCategory(cat: string) {
   return cat
@@ -134,8 +135,14 @@ export default function EventGrid() {
 
   if (filteredEvents.length === 0) {
     return (
-      <div className="mx-auto max-w-7xl px-4 text-center text-muted-foreground">
-        No hangouts found.
+      <div className="mx-auto max-w-7xl px-4">
+        <EmptyState
+          illustrationSrc="/assets/illustrations/no-hangouts.png"
+          title="No hangouts found"
+          description="Try changing your filters or nearby city to discover upcoming hangouts."
+          action={{ href: '/', label: 'Browse Hangouts' }}
+          className="my-6"
+        />
       </div>
     );
   }

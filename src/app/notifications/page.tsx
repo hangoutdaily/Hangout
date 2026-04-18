@@ -1,12 +1,12 @@
 'use client';
 
 import { useContext, useMemo, useState } from 'react';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { AnimatePresence, motion, Variants } from 'framer-motion';
 import { format, formatDistanceToNow, isToday, isYesterday } from 'date-fns';
 import { BellRing, CheckCheck, RefreshCcw, UserPlus, XCircle } from 'lucide-react';
 import { Button } from '@/components/ui/shadcn/button';
+import { EmptyState } from '@/components/ui/EmptyState';
 import { cn } from '@/lib/utils';
 import { AuthContext } from '@/context/AuthContext';
 import { AppNotification, NotificationFilter } from '@/api/notifications';
@@ -124,21 +124,13 @@ export default function NotificationsPage() {
   if (!user) {
     return (
       <div className="min-h-[70vh] flex items-center justify-center px-4">
-        <motion.div
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.25, ease: 'easeOut' }}
-          className="max-w-md w-full rounded-2xl border border-border bg-card p-8 text-center"
-        >
-          <BellRing className="h-6 w-6 mx-auto mb-4 text-muted-foreground" />
-          <h1 className="text-xl font-medium text-foreground">Sign in to view notifications</h1>
-          <p className="text-sm text-muted-foreground mt-2 leading-relaxed">
-            Join requests, approvals, and hangout changes will appear here.
-          </p>
-          <Button asChild className="mt-6 rounded-full px-6 h-9 text-sm">
-            <Link href="/login">Go to login</Link>
-          </Button>
-        </motion.div>
+        <EmptyState
+          illustrationSrc="/assets/illustrations/no-login.png"
+          title="Sign in to view notifications"
+          description="Join requests, approvals, and hangout changes will appear here."
+          showSignIn
+          className="w-full max-w-md my-0"
+        />
       </div>
     );
   }
@@ -234,23 +226,15 @@ export default function NotificationsPage() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.2, ease: 'easeOut' }}
-              className="max-w-md mx-auto px-4 py-10 text-center"
+              className="px-4"
             >
-              <BellRing className="w-10 h-10 text-muted-foreground mx-auto mb-4" />
-
-              <h2 className="text-2xl font-bold mb-2">You&apos;re all caught up</h2>
-
-              <p className="text-muted-foreground mb-6">
-                No new notifications right now. Join hangouts or interact with others to see
-                activity here.
-              </p>
-
-              <Button
-                asChild
-                className="px-6 py-2.5 bg-primary text-primary-foreground rounded-lg font-semibold hover:bg-primary/90 transition-colors"
-              >
-                <Link href="/">Explore Hangouts</Link>
-              </Button>
+              <EmptyState
+                illustrationSrc="/assets/illustrations/no-notifications.png"
+                title="All quiet for now."
+                description="Jump into a hangout or make a move. This space wakes up when you do."
+                action={{ href: '/', label: 'Explore Hangouts' }}
+                className="my-2"
+              />
             </motion.div>
           ) : (
             <motion.div

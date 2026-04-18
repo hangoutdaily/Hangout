@@ -4,14 +4,13 @@ import { useState, useContext, useMemo, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useQueryClient } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MessageCircle, Archive, Inbox } from 'lucide-react';
+import { Archive, Inbox } from 'lucide-react';
 import { getMyChats } from '@/api/chat';
 import ChatCard from '@/components/ui/ChatCard';
 import { AuthContext } from '@/context/AuthContext';
 import { ChatRoomCard } from '@/types';
-import Link from 'next/link';
-import { Button } from '@/components/ui/shadcn/button';
 import { useSocket } from '@/providers/SocketProvider';
+import { EmptyState } from '@/components/ui/EmptyState';
 
 type Tab = 'active' | 'archived';
 
@@ -123,19 +122,14 @@ export default function ChatsPage() {
 
   if (!user) {
     return (
-      <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4 text-center">
-        <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center mb-6">
-          <MessageCircle className="w-10 h-10 text-primary" />
-        </div>
-        <h1 className="text-2xl font-bold tracking-tight mb-2">Sign in to chat</h1>
-        <p className="text-muted-foreground max-w-md mb-8">
-          Log in to see your hangout group chats.
-        </p>
-        <Link href="/login" passHref legacyBehavior>
-          <Button size="lg" variant="outline">
-            Sign In
-          </Button>
-        </Link>
+      <div className="min-h-screen bg-background flex items-center justify-center px-4">
+        <EmptyState
+          illustrationSrc="/assets/illustrations/no-login.png"
+          title="Sign in to chat"
+          description="Log in to see your hangout group chats."
+          showSignIn
+          className="w-full max-w-md my-0"
+        />
       </div>
     );
   }
@@ -213,7 +207,7 @@ export default function ChatsPage() {
               transition={{ duration: 0.2 }}
             >
               {currentList.length === 0 ? (
-                <EmptyState tab={activeTab} />
+                <ChatTabEmptyState tab={activeTab} />
               ) : (
                 <div className="space-y-3">
                   {currentList.map((chat, index) => (
@@ -229,31 +223,20 @@ export default function ChatsPage() {
   );
 }
 
-function EmptyState({ tab }: { tab: Tab }) {
+function ChatTabEmptyState({ tab }: { tab: Tab }) {
+  const isActiveTab = tab === 'active';
+
   return (
-    <div className="flex flex-col items-center justify-center py-20 text-center">
-      <div className="w-16 h-16 bg-surface rounded-full flex items-center justify-center mb-5">
-        {tab === 'active' ? (
-          <MessageCircle className="w-7 h-7 text-muted-foreground/50" />
-        ) : (
-          <Archive className="w-7 h-7 text-muted-foreground/50" />
-        )}
-      </div>
-      <h2 className="text-lg font-semibold mb-1.5">
-        {tab === 'active' ? 'No active chats' : 'No archived chats'}
-      </h2>
-      <p className="text-sm text-muted-foreground max-w-[260px]">
-        {tab === 'active'
+    <EmptyState
+      illustrationSrc="/assets/illustrations/no-chats.png"
+      title={isActiveTab ? 'No active chats' : 'No archived chats'}
+      description={
+        isActiveTab
           ? 'Join a hangout to start chatting with the group!'
-          : 'Completed and cancelled hangout chats will appear here.'}
-      </p>
-      {tab === 'active' && (
-        <Link href="/" className="mt-5">
-          <Button variant="outline" size="sm">
-            Browse Hangouts
-          </Button>
-        </Link>
-      )}
-    </div>
+          : 'Completed and cancelled hangout chats will appear here.'
+      }
+      action={isActiveTab ? { href: '/', label: 'Browse Hangouts' } : undefined}
+      className="my-8"
+    />
   );
 }
