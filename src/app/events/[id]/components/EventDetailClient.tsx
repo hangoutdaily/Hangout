@@ -59,6 +59,7 @@ import {
   notifyJoinRequestApproved,
   notifyJoinRequestSubmitted,
 } from '@/lib/notificationActivity';
+import { EmptyState } from '@/components/ui/EmptyState';
 
 function WhatsAppIcon({ className }: { className?: string }) {
   return (
@@ -405,7 +406,17 @@ export default function EventDetailClient({ id }: EventDetailClientProps) {
       </div>
     );
   if (!event)
-    return <div className="p-10 text-center text-muted-foreground">Hangout not found.</div>;
+    return (
+      <div className="px-4 py-10">
+        <EmptyState
+          illustrationSrc="/assets/illustrations/no-hangouts.png"
+          title="Hangout not found"
+          description="This hangout may have been removed or is no longer available."
+          action={{ href: '/', label: 'Browse Hangouts' }}
+          className="my-0"
+        />
+      </div>
+    );
 
   const isHost = user?.profileId === event.host.id;
   const eventDate = new Date(event.datetime);

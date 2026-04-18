@@ -10,6 +10,7 @@ import { getChatMessages } from '@/api/chat';
 import { useSocket } from '@/providers/SocketProvider';
 import { AuthContext } from '@/context/AuthContext';
 import { ChatMessage } from '@/types';
+import { EmptyState } from '@/components/ui/EmptyState';
 
 function formatMessageDate(dateStr: string) {
   const date = new Date(dateStr);
@@ -207,6 +208,20 @@ export default function ChatRoomPage() {
   };
 
   const messageGroups = groupMessagesByDate(messages);
+
+  if (!user) {
+    return (
+      <div className="min-h-[70vh] flex items-center justify-center px-4">
+        <EmptyState
+          illustrationSrc="/assets/illustrations/no-login.png"
+          title="Sign in to open this chat"
+          description="Log in to view messages and join the conversation."
+          showSignIn
+          className="w-full max-w-md my-0"
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col h-[100dvh] bg-background">
