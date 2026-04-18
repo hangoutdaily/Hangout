@@ -37,7 +37,7 @@ export default function CoverImagePicker({
 
   const categoryQuery = useMemo(() => getCategoryImageQuery(category), [category]);
   const keyConfigured = isUnsplashAccessKeyConfigured();
-  const defaultInviteQuery = 'you are invited comic illustration poster pop art';
+  const defaultInviteQuery = 'you are invited pop art';
 
   const loadImages = useCallback(
     async (query: string, autoSelect = false) => {

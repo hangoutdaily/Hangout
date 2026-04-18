@@ -144,9 +144,7 @@ export default function ChatsPage() {
     <div className="min-h-screen bg-background">
       {/* Header */}
       <div className="sticky top-0 z-30 bg-background/80 backdrop-blur-xl border-b border-border/40">
-        <div className="max-w-lg mx-auto px-4 pt-6 pb-0">
-          <h1 className="text-2xl font-bold tracking-tight mb-4">Chats</h1>
-
+        <div className="max-w-lg mx-auto px-4 pt-4 pb-0">
           {/* Tab Switcher */}
           <div className="flex gap-1 bg-surface rounded-xl p-1">
             {(['active', 'archived'] as Tab[]).map((tab) => (

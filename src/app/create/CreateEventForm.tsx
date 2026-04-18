@@ -302,7 +302,8 @@ export default function CreateEventForm() {
             Cover Image
           </div>
           <p className="text-xs text-muted-foreground">
-            Starts with a You-are-invited comic vibe. You can search Unsplash for any style.
+            Starts with a fun, comic-style “You&apos;re invited”. feel free to explore any visual
+            style you like.
           </p>
           <CoverImagePicker
             category={categoryMap[form.category] || ''}
