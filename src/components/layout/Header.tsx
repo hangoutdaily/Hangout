@@ -3,43 +3,29 @@
 import { usePathname, useRouter } from 'next/navigation';
 import { useState, useRef, useEffect, useContext } from 'react';
 import Link from 'next/link';
-import {
-  MapPin,
-  Bell,
-  Home,
-  Users,
-  MessageCircle,
-  Heart,
-  PlusSquare,
-  Search,
-  Settings,
-  Sun,
-  Moon,
-  Monitor,
-  LogOut,
-} from 'lucide-react';
+import { MapPin, Bell, Heart, Search, Settings, Sun, Moon, Monitor, LogOut } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import ThemeToggle from '@/components/ui/ThemeToggle';
 import { cn } from '@/lib/utils';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/shadcn/avatar';
 import { AuthContext } from '@/context/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
-import MobileNav from './MobileNav';
 import { useScrollDirection } from '@/hooks/useScrollDirection';
+import { useUnreadNotificationsCount } from '@/hooks/useNotifications';
 
 const placeholders = [
-  'Search "Midnight Walk"',
-  'Search "Chai and gossip"',
-  'Search "Dmart Together?"',
-  'Search "Gully Cricket"',
-  'Search "Board Game Night"',
-  'Search "Birthday Crashers"',
-  'Search "No Phone Hangout"',
-  'Search "Street Food Hunt"',
-  'Search "Sunset Talks"',
-  'Search "Badminton Match"',
-  'Search "Try Matcha Together?"',
-  'Search "Mystery Dinner"',
+  '"Midnight Walk"',
+  '"Chai and gossip"',
+  '"Dmart Together?"',
+  '"Gully Cricket"',
+  '"Board Game Night"',
+  '"Birthday Crashers"',
+  '"No Phone Hangout"',
+  '"Street Food Hunt"',
+  '"Sunset Talks"',
+  '"Badminton Match"',
+  '"Try Matcha Together?"',
+  '"Mystery Dinner"',
 ];
 
 export default function Header() {
@@ -54,6 +40,7 @@ export default function Header() {
   const { theme, setTheme } = useTheme();
   const router = useRouter();
   const scrollDirection = useScrollDirection();
+  const { data: unreadCount = 0 } = useUnreadNotificationsCount(Boolean(user));
   const userCity = user?.profile?.city || 'Ahmedabad';
 
   const isHome = pathname === '/';
@@ -94,14 +81,6 @@ export default function Header() {
     { href: '/chats', label: 'Chats' },
   ];
 
-  const mobileNav = [
-    { href: '/', label: 'Home', icon: Home },
-    { href: '/my-hangouts', label: 'My Hangouts', icon: Heart },
-    { href: '/create', label: 'Create', icon: PlusSquare },
-    { href: '/chats', label: 'Chats', icon: MessageCircle },
-    { href: '/profile', label: 'Profile', icon: Users },
-  ];
-
   return (
     <header
       className={cn(
@@ -118,13 +97,18 @@ export default function Header() {
           {userCity}
         </div>
         <div className="flex items-center gap-2">
-          <button
+          <Link
             aria-label="Notifications"
-            className="p-2 rounded-md hover:bg-accent/10 transition"
-            onClick={() => setIsProfileOpen(!isProfileOpen)}
+            href="/notifications"
+            className="relative p-2 rounded-md hover:bg-accent/10 transition"
           >
             <Bell className="h-5 w-5 text-foreground" />
-          </button>
+            {unreadCount > 0 && (
+              <span className="absolute -top-1 -right-1 h-4 min-w-4 px-1 rounded-full bg-foreground text-background text-[10px] leading-4 text-center">
+                {unreadCount > 9 ? '9+' : unreadCount}
+              </span>
+            )}
+          </Link>
 
           {pathname === '/profile' && (
             <div className="relative" ref={settingsRef}>
@@ -222,18 +206,21 @@ export default function Header() {
               />
               {!searchValue && (
                 <div className="absolute top-0 left-11 bottom-0 right-5 flex items-center pointer-events-none overflow-hidden">
-                  <AnimatePresence mode="popLayout">
-                    <motion.span
-                      key={placeholderIndex}
-                      initial={{ y: 20, opacity: 0 }}
-                      animate={{ y: 0, opacity: 1 }}
-                      exit={{ y: -20, opacity: 0 }}
-                      transition={{ duration: 0.3, ease: 'easeOut' }}
-                      className="text-muted-foreground text-[15px] absolute"
-                    >
-                      {placeholders[placeholderIndex]}
-                    </motion.span>
-                  </AnimatePresence>
+                  <span className="text-muted-foreground text-[15px] mr-1">Search</span>
+                  <span className="relative inline-block min-w-[180px] h-[22px]">
+                    <AnimatePresence mode="popLayout">
+                      <motion.span
+                        key={placeholderIndex}
+                        initial={{ y: 20, opacity: 0 }}
+                        animate={{ y: 0, opacity: 1 }}
+                        exit={{ y: -20, opacity: 0 }}
+                        transition={{ duration: 0.3, ease: 'easeOut' }}
+                        className="text-muted-foreground text-[15px] absolute left-0 top-1/2 -translate-y-1/2"
+                      >
+                        {placeholders[placeholderIndex]}
+                      </motion.span>
+                    </AnimatePresence>
+                  </span>
                 </div>
               )}
             </div>
@@ -253,6 +240,18 @@ export default function Header() {
                 className="hover:text-foreground transition-colors"
               >
                 <Heart className="h-5 w-5" />
+              </Link>
+              <Link
+                href="/notifications"
+                title="Notifications"
+                className="relative hover:text-foreground transition-colors"
+              >
+                <Bell className="h-5 w-5" />
+                {unreadCount > 0 && (
+                  <span className="absolute -top-1.5 -right-2 h-4 min-w-4 px-1 rounded-full bg-foreground text-background text-[10px] leading-4 text-center">
+                    {unreadCount > 9 ? '9+' : unreadCount}
+                  </span>
+                )}
               </Link>
             </nav>
           )}
@@ -362,18 +361,21 @@ export default function Header() {
             />
             {!searchValue && (
               <div className="absolute top-0 left-12 bottom-0 right-4 flex items-center pointer-events-none overflow-hidden">
-                <AnimatePresence mode="popLayout">
-                  <motion.span
-                    key={placeholderIndex}
-                    initial={{ y: 20, opacity: 0 }}
-                    animate={{ y: 0, opacity: 1 }}
-                    exit={{ y: -20, opacity: 0 }}
-                    transition={{ duration: 0.3, ease: 'easeOut' }}
-                    className="text-muted-foreground text-[16px] absolute"
-                  >
-                    {placeholders[placeholderIndex]}
-                  </motion.span>
-                </AnimatePresence>
+                <span className="text-muted-foreground text-[16px] mr-1">Search</span>
+                <span className="relative inline-block min-w-[190px] h-[24px]">
+                  <AnimatePresence mode="popLayout">
+                    <motion.span
+                      key={placeholderIndex}
+                      initial={{ y: 20, opacity: 0 }}
+                      animate={{ y: 0, opacity: 1 }}
+                      exit={{ y: -20, opacity: 0 }}
+                      transition={{ duration: 0.3, ease: 'easeOut' }}
+                      className="text-muted-foreground text-[16px] absolute left-0 top-1/2 -translate-y-1/2"
+                    >
+                      {placeholders[placeholderIndex]}
+                    </motion.span>
+                  </AnimatePresence>
+                </span>
               </div>
             )}
           </div>

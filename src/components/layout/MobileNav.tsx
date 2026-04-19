@@ -3,14 +3,17 @@
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Home, Heart, PlusSquare, MessageCircle, Users } from 'lucide-react';
+import { useContext } from 'react';
+import { Home, Heart, Plus, MessageCircle, Users, Bell } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useScrollDirection } from '@/hooks/useScrollDirection';
+import { AuthContext } from '@/context/AuthContext';
+import { useUnreadNotificationsCount } from '@/hooks/useNotifications';
 
 const mobileNavItems = [
   { href: '/', icon: Home },
   { href: '/my-hangouts', icon: Heart },
-  { href: '/create', icon: PlusSquare, isSpecial: true },
+  { href: '/create', icon: Plus, isSpecial: true },
   { href: '/chats', icon: MessageCircle },
   { href: '/profile', icon: Users },
 ];
@@ -18,6 +21,8 @@ const mobileNavItems = [
 export default function MobileNav() {
   const pathname = usePathname();
   const scrollDirection = useScrollDirection();
+  const { user } = useContext(AuthContext);
+  const { data: unreadCount = 0 } = useUnreadNotificationsCount(Boolean(user));
 
   // Hide nav inside individual chat rooms (e.g. /chats/123) and onboarding flows
   const isChatRoom = /^\/chats\/\d+/.test(pathname);
@@ -44,9 +49,24 @@ export default function MobileNav() {
                 <Link
                   key={href}
                   href={href}
-                  className="relative flex items-center justify-center w-14 h-14 bg-foreground rounded-2xl shadow-lg transition-transform active:scale-90 mx-1"
+                  className="relative flex items-center justify-center flex-1 h-full"
                 >
-                  <Icon className="h-6 w-6 text-background" />
+                  <motion.div
+                    whileTap={{ scale: 0.9 }}
+                    animate={{
+                      y: isActive ? -4 : -2,
+                      scale: isActive ? 1.1 : 1,
+                    }}
+                    transition={{ type: 'spring', stiffness: 300, damping: 18 }}
+                    className={cn(
+                      'flex items-center justify-center w-12 h-12 rounded-2xl shadow-md transition-all duration-300',
+                      isActive
+                        ? 'bg-accent text-white shadow-lg'
+                        : 'bg-background border border-border text-foreground'
+                    )}
+                  >
+                    <Icon className="h-5 w-5" />
+                  </motion.div>
                 </Link>
               );
             }
@@ -77,6 +97,11 @@ export default function MobileNav() {
                   )}
                 >
                   <Icon className="h-5 w-5" />
+                  {href === '/notifications' && unreadCount > 0 && (
+                    <span className="absolute -top-2 -right-2 h-4 min-w-4 px-1 rounded-full bg-foreground text-background text-[10px] leading-4 text-center font-medium">
+                      {unreadCount > 9 ? '9+' : unreadCount}
+                    </span>
+                  )}
                 </motion.div>
               </Link>
             );

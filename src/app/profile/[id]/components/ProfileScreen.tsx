@@ -9,9 +9,9 @@ import { useLikeMutation, useUnlikeMutation } from '@/hooks/useEvents';
 import ProfileView from './ProfileView';
 import ProfileEditForm from './ProfileEditForm';
 import { Skeleton } from '@/components/ui/shadcn/skeleton';
-import { AlertTriangle, User, Edit2 } from 'lucide-react';
+import { Edit2 } from 'lucide-react';
 import { Button } from '@/components/ui/shadcn/button';
-import Link from 'next/link';
+import { EmptyState } from '@/components/ui/EmptyState';
 
 interface ProfileScreenProps {
   id?: string;
@@ -31,24 +31,6 @@ function ProfileScreenSkeleton() {
     </div>
   );
 }
-
-const UnauthenticatedProfile = () => (
-  <div className="flex flex-col items-center justify-center min-h-[60vh] px-4 text-center space-y-4">
-    <div className="w-16 h-16 bg-secondary/30 rounded-full flex items-center justify-center mb-4">
-      <User className="w-8 h-8 text-muted-foreground" />
-    </div>
-    <h2 className="text-2xl font-bold tracking-tight">Strangers need profiles too</h2>
-    <p className="text-muted-foreground max-w-sm mx-auto">
-      Sign in to create your profile, host hangouts, and turn awkward hellos into real
-      conversations.
-    </p>
-    <Link href="/login" passHref legacyBehavior>
-      <Button size="lg" className="mt-4 font-semibold px-8">
-        Sign In
-      </Button>
-    </Link>
-  </div>
-);
 
 export default function ProfileScreen({ id }: ProfileScreenProps) {
   const { user } = useContext(AuthContext);
@@ -199,41 +181,44 @@ export default function ProfileScreen({ id }: ProfileScreenProps) {
 
   if (!user && !id) {
     return (
-      <div className="min-h-screen bg-background pt-10">
-        <UnauthenticatedProfile />
+      <div className="min-h-screen bg-background flex items-center justify-center items-start px-4">
+        <EmptyState
+          illustrationSrc="/assets/illustrations/no-login.png"
+          title="Sign in to view your profile"
+          description="Create your profile, host hangouts, and turn awkward hellos into real conversations."
+          showSignIn
+          className="w-full max-w-md my-0"
+        />
       </div>
     );
   }
 
   if (id && !user) {
     return (
-      <div className="min-h-screen bg-background pt-10">
-        <div className="flex flex-col items-center justify-center min-h-[60vh] px-4 text-center space-y-4">
-          <div className="w-16 h-16 bg-secondary/30 rounded-full flex items-center justify-center mb-4">
-            <User className="w-8 h-8 text-muted-foreground" />
-          </div>
-          <h2 className="text-2xl font-bold tracking-tight">Nice try 👀</h2>
-          <p className="text-muted-foreground max-w-sm mx-auto">
-            Profiles are for members only. Sign in to unlock the full story behind this person.
-          </p>
-          <Link href="/login" passHref legacyBehavior>
-            <Button size="lg" className="mt-4 font-semibold px-8">
-              Sign In
-            </Button>
-          </Link>
-        </div>
+      <div className="min-h-screen bg-background flex items-center justify-center items-start px-4">
+        <EmptyState
+          illustrationSrc="/assets/illustrations/no-login.png"
+          title="Sign in to view this profile"
+          description="Profiles are for members only. Log in to unlock the full story behind this person."
+          showSignIn
+          className="w-full max-w-md my-0"
+        />
       </div>
     );
   }
 
   if (error || !profile) {
     return (
-      <div className="max-w-3xl mx-auto px-4 py-20 text-center">
-        <AlertTriangle className="w-10 h-10 text-destructive mx-auto mb-2" />
-        <h2 className="text-2xl font-bold mb-1">
-          Oops! We couldn’t load your profile. Please log in again.
-        </h2>
-        <p className="text-muted-foreground">{error || 'We lost the thread.'}</p>
+      <div className="max-w-3xl mx-auto px-4 py-16">
+        <EmptyState
+          illustrationSrc="/assets/illustrations/no-hangouts.png"
+          title="Profile unavailable"
+          description={
+            error || 'We couldn’t load this profile right now. Please try again shortly.'
+          }
+          action={{ href: '/', label: 'Browse Hangouts' }}
+          className="my-0"
+        />
       </div>
     );
   }

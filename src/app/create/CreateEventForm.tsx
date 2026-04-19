@@ -3,7 +3,16 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Calendar, MapPin, Tag, Wallet, CheckCircle2, Loader2, LocateFixed } from 'lucide-react';
+import {
+  Calendar,
+  MapPin,
+  Tag,
+  Wallet,
+  CheckCircle2,
+  Loader2,
+  LocateFixed,
+  ImagePlus,
+} from 'lucide-react';
 import { GoogleMap, Marker, useLoadScript } from '@react-google-maps/api';
 import { Field, FieldInput, FieldTextarea, FieldSelect } from '@/components/ui/FormField';
 import { Button } from '@/components/ui/shadcn/button';
@@ -12,6 +21,7 @@ import { createEvent, getCategories } from '@/api/event';
 import { DatePicker } from './components/DatePicker';
 import { TimePicker } from './components/TimePicker';
 import { ApiError } from '@/types';
+import CoverImagePicker from '@/components/ui/CoverImagePicker';
 
 const LIBRARIES: ('places' | 'geometry')[] = ['places', 'geometry'];
 const DEFAULT_CENTER = { lat: 23.2156, lng: 72.6369 };
@@ -41,6 +51,7 @@ interface EventForm {
   maxAttendees: string;
   priceType: PriceType | '';
   geo: GeoLocation | null;
+  coverImage: string;
 }
 
 function formatCategoryName(enumValue: string): string {
@@ -69,6 +80,7 @@ export default function CreateEventForm() {
     maxAttendees: '',
     priceType: '',
     geo: null,
+    coverImage: '',
   });
 
   const [categories, setCategories] = useState<string[]>([]);
@@ -238,6 +250,7 @@ export default function CreateEventForm() {
         maxAttendees: Number(form.maxAttendees),
         priceType: form.priceType,
         geo: form.geo,
+        photos: form.coverImage ? [form.coverImage] : undefined,
       };
 
       await createEvent(payload);
@@ -253,7 +266,6 @@ export default function CreateEventForm() {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-8">
-      {generalError && <p className="text-sm text-destructive">{generalError}</p>}
       <Section icon={Tag} title="What’s the Plan?" subtitle="Set the vibe people sign up for">
         <Field label="Title" error={errors.title}>
           <FieldInput
@@ -282,6 +294,22 @@ export default function CreateEventForm() {
             error={!!errors.description}
           />
         </Field>
+
+        <div className="space-y-2">
+          <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+            <ImagePlus className="h-4 w-4 text-accent" />
+            Cover Image
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Starts with a fun, comic-style “You&apos;re invited”. feel free to explore any visual
+            style you like.
+          </p>
+          <CoverImagePicker
+            category={categoryMap[form.category] || ''}
+            selectedImage={form.coverImage}
+            onSelectImage={(imageUrl) => update('coverImage', imageUrl)}
+          />
+        </div>
       </Section>
 
       <Section
@@ -422,10 +450,13 @@ export default function CreateEventForm() {
             </motion.p>
           )}
         </AnimatePresence>
-        <Button type="submit" className="font-semibold w-full sm:w-auto" disabled={isLoading}>
-          {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-          {isLoading ? 'Creating...' : 'Create Hangout'}
-        </Button>
+        <div className="flex flex-col gap-2 w-full sm:w-auto">
+          {generalError && <p className="text-sm text-destructive text-right">{generalError}</p>}
+          <Button type="submit" className="font-semibold w-full sm:w-auto" disabled={isLoading}>
+            {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            {isLoading ? 'Creating...' : 'Create Hangout'}
+          </Button>
+        </div>
       </motion.div>
     </form>
   );

@@ -1,5 +1,3 @@
-'use client';
-
 import { OnboardingContainer } from '@/components/ui/OnboardingContainer';
 
 export default function Home() {

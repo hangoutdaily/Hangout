@@ -27,7 +27,13 @@ interface ChatCardProps {
 }
 
 export default function ChatCard({ chat, index }: ChatCardProps) {
-  const isArchived = chat.roomStatus === 'ARCHIVED' || chat.isRemoved;
+  const isPast = new Date(chat.eventDatetime) < new Date();
+  const isArchived =
+    chat.roomStatus === 'ARCHIVED' ||
+    chat.isRemoved ||
+    chat.eventStatus === 'COMPLETED' ||
+    chat.eventStatus === 'CANCELLED' ||
+    isPast;
   const eventDate = formatEventDate(chat.eventDatetime);
 
   return (
@@ -69,7 +75,9 @@ export default function ChatCard({ chat, index }: ChatCardProps) {
                     ? 'Removed'
                     : chat.eventStatus === 'CANCELLED'
                       ? 'Cancelled'
-                      : 'Completed'}
+                      : chat.eventStatus === 'COMPLETED' || isPast
+                        ? 'Completed'
+                        : 'Archived'}
                 </span>
               </div>
             )}

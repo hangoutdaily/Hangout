@@ -1,11 +1,10 @@
 'use client';
 
 import { useState, useContext } from 'react';
-import { Heart, AlertTriangle, Calendar, Clock } from 'lucide-react';
+import { AlertTriangle } from 'lucide-react';
 import EventCard from './EventCard';
 import { Skeleton } from './shadcn/skeleton';
 import { AuthContext } from '@/context/AuthContext';
-import Link from 'next/link';
 import { formatCategory } from './EventGrid';
 import {
   useMyLikes,
@@ -18,8 +17,10 @@ import { useQueries } from '@tanstack/react-query';
 import * as eventApi from '@/api/event';
 import JoinEventDialog from '../layout/JoinEventDialog';
 import ConfirmUnjoinDialog from '../layout/ConfirmUnjoinDialog';
-import { isHostOfEvent } from '@/lib/utils';
+import { cn, isHostOfEvent } from '@/lib/utils';
 import { Button } from './shadcn/button';
+import { EmptyState } from './EmptyState';
+import { ApiError } from '@/types';
 
 type FetchedEvent = {
   id: number;
@@ -59,6 +60,8 @@ export default function MyHangoutsGrid() {
 
   const [joinDialogFor, setJoinDialogFor] = useState<number | null>(null);
   const [unjoinDialogFor, setUnjoinDialogFor] = useState<number | null>(null);
+  const [joinErrorMessage, setJoinErrorMessage] = useState<string | null>(null);
+  const [isSubmittingJoin, setIsSubmittingJoin] = useState(false);
 
   const likedIds = new Set(likesData?.likedEventIds || []);
 
@@ -122,95 +125,81 @@ export default function MyHangoutsGrid() {
   const renderEmptyState = () => {
     if (activeTab === 'WISHLIST') {
       return (
-        <div className="max-w-md mx-auto px-4 py-10 text-center">
-          <Heart className="w-10 h-10 text-muted-foreground mx-auto mb-4" />
-          <h2 className="text-2xl font-bold mb-2">Your Wishlist Looks Lonely</h2>
-          <p className="text-muted-foreground mb-6">
-            Explore some hangouts and show a little love by tapping that heart icon.
-          </p>
-          <Link
-            href="/"
-            className="px-6 py-2.5 bg-primary text-primary-foreground rounded-lg font-semibold hover:bg-primary/90 transition-colors"
-          >
-            Discover Hangouts
-          </Link>
-        </div>
+        <EmptyState
+          illustrationSrc="/assets/illustrations/no-hangouts.png"
+          title="Your Wishlist Looks Lonely"
+          description="Explore some hangouts and show a little love by tapping that heart icon."
+          action={{ href: '/', label: 'Discover Hangouts' }}
+          className="my-6"
+        />
       );
     }
     if (activeTab === 'UPCOMING') {
       return (
-        <div className="max-w-md mx-auto px-4 py-10 text-center">
-          <Calendar className="w-10 h-10 text-muted-foreground mx-auto mb-4" />
-          <h2 className="text-2xl font-bold mb-2">No Upcoming Hangouts</h2>
-          <p className="text-muted-foreground mb-6">
-            You haven&apos;t joined any hangouts yet. Find one that interests you!
-          </p>
-          <Link
-            href="/"
-            className="px-6 py-2.5 bg-primary text-primary-foreground rounded-lg font-semibold hover:bg-primary/90 transition-colors"
-          >
-            Browse Hangouts
-          </Link>
-        </div>
+        <EmptyState
+          illustrationSrc="/assets/illustrations/no-hangouts.png"
+          title="No Upcoming Hangouts"
+          description="You haven't joined any hangouts yet. Find one that interests you!"
+          action={{ href: '/', label: 'Browse Hangouts' }}
+          className="my-6"
+        />
       );
     }
     return (
-      // REQUESTED
-      <div className="max-w-md mx-auto px-4 py-10 text-center">
-        <Clock className="w-10 h-10 text-muted-foreground mx-auto mb-4" />
-        <h2 className="text-2xl font-bold mb-2">No Pending Requests</h2>
-        <p className="text-muted-foreground mb-6">
-          You don&apos;t have any pending join requests at the moment.
-        </p>
-        <Link
-          href="/"
-          className="px-6 py-2.5 bg-primary text-primary-foreground rounded-lg font-semibold hover:bg-primary/90 transition-colors"
-        >
-          Find More Hangouts
-        </Link>
-      </div>
+      <EmptyState
+        illustrationSrc="/assets/illustrations/no-hangouts.png"
+        title="No Pending Requests"
+        description="You don't have any pending join requests at the moment."
+        action={{ href: '/', label: 'Find More Hangouts' }}
+        className="my-6"
+      />
     );
   };
 
   if (!user) {
     return (
-      <div className="max-w-md mx-auto px-4 py-10 text-center">
-        <Heart className="w-10 h-10 text-muted-foreground mx-auto mb-4" />
-        <h2 className="text-2xl font-bold mb-2">Sign in to view My Hangouts</h2>
-        <p className="text-muted-foreground mb-6">
-          Log in or create an account to track your upcoming and favorite hangouts.
-        </p>
-        <Link
-          href="/login"
-          className="px-6 py-2.5 bg-primary text-primary-foreground rounded-lg font-semibold hover:bg-primary/90 transition-colors"
-        >
-          Sign In
-        </Link>
+      <div className="min-h-screen bg-background flex items-center justify-center items-start px-4">
+        <EmptyState
+          illustrationSrc="/assets/illustrations/no-login.png"
+          title="Sign in to view My Hangouts"
+          description="Log in or create an account to track your upcoming and favorite hangouts."
+          showSignIn
+          className="my-6"
+        />
       </div>
     );
   }
 
   return (
     <div className="mx-auto max-w-7xl px-4">
-      <div className="flex gap-2 mb-8 overflow-x-auto pb-2 scrollbar-hide">
+      <div className="flex gap-2 mb-8 overflow-x-auto scrollbar-hide">
         <Button
           variant={activeTab === 'UPCOMING' ? 'default' : 'outline'}
           onClick={() => setActiveTab('UPCOMING')}
-          className="rounded-full"
+          className={cn(
+            'rounded-full whitespace-nowrap',
+            activeTab !== 'UPCOMING' && 'border-border hover:border-foreground/30'
+          )}
         >
           Upcoming
         </Button>
         <Button
           variant={activeTab === 'WISHLIST' ? 'default' : 'outline'}
           onClick={() => setActiveTab('WISHLIST')}
-          className="rounded-full"
+          className={cn(
+            'rounded-full whitespace-nowrap',
+            activeTab !== 'WISHLIST' && 'border-border hover:border-foreground/30'
+          )}
         >
           Wishlist
         </Button>
         <Button
           variant={activeTab === 'REQUESTED' ? 'default' : 'outline'}
           onClick={() => setActiveTab('REQUESTED')}
-          className="rounded-full"
+          className={cn(
+            'rounded-full whitespace-nowrap',
+            activeTab !== 'REQUESTED' && 'border-border hover:border-foreground/30'
+          )}
         >
           Requested
         </Button>
@@ -218,11 +207,27 @@ export default function MyHangoutsGrid() {
 
       <JoinEventDialog
         open={joinDialogFor !== null}
-        onClose={() => setJoinDialogFor(null)}
-        onSubmit={async (message) => {
-          const id = joinDialogFor!;
-          joinMutation.mutate({ id, message });
+        onClose={() => {
           setJoinDialogFor(null);
+          setJoinErrorMessage(null);
+        }}
+        isSubmitting={isSubmittingJoin}
+        errorMessage={joinErrorMessage}
+        onSubmit={async (message) => {
+          if (joinDialogFor == null) return;
+          setJoinErrorMessage(null);
+          setIsSubmittingJoin(true);
+          try {
+            await joinMutation.mutateAsync({ id: joinDialogFor, message });
+            setJoinDialogFor(null);
+          } catch (err) {
+            const error = err as ApiError;
+            setJoinErrorMessage(
+              error.response?.data?.error || 'Unable to send request right now. Please try again.'
+            );
+          } finally {
+            setIsSubmittingJoin(false);
+          }
         }}
       />
 
@@ -297,8 +302,10 @@ export default function MyHangoutsGrid() {
                 onJoin={() => {
                   if (!user) return (window.location.href = '/login');
                   if (isHost) return;
-                  if (status === 'NONE' || status === 'REJECTED') setJoinDialogFor(event.id);
-                  else setUnjoinDialogFor(event.id);
+                  if (status === 'NONE' || status === 'REJECTED') {
+                    setJoinErrorMessage(null);
+                    setJoinDialogFor(event.id);
+                  } else setUnjoinDialogFor(event.id);
                 }}
               />
             );

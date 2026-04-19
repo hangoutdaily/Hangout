@@ -24,6 +24,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useRouter } from 'next/navigation';
+import { useQueryClient } from '@tanstack/react-query';
 import {
   cancelJoinEvent,
   getEvent,
@@ -46,8 +47,20 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/shadcn/avat
 import { Badge } from '@/components/ui/shadcn/badge';
 import { cn } from '@/lib/utils';
 import { GoogleMap, Marker, useLoadScript } from '@react-google-maps/api';
-import { Separator } from '@/components/ui/shadcn/separator';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/shadcn/dialog';
+import {
+  getCategoryImageQuery,
+  getUnsplashSourceImage,
+  searchUnsplashPhotos,
+} from '@/lib/unsplash';
+import { ChatRoomCard } from '@/types';
+import { ApiError } from '@/types';
+import {
+  notifyHangoutCancelled,
+  notifyJoinRequestApproved,
+  notifyJoinRequestSubmitted,
+} from '@/lib/notificationActivity';
+import { EmptyState } from '@/components/ui/EmptyState';
 
 function WhatsAppIcon({ className }: { className?: string }) {
   return (
@@ -104,7 +117,7 @@ type EventDetail = {
   maxAttendees: number;
   category: string;
   priceType: 'FREE' | 'SPLIT_BILL';
-  photos: string[];
+  photos?: string[];
   geo?: GeoLocation;
   host: {
     id: number;
@@ -130,59 +143,26 @@ type JoinRequest = {
   };
 };
 
-const categories = [
-  'movies',
-  'sports',
-  'walk',
-  'run',
-  'coffee_tea',
-  'travel',
-  'share_ride',
-  'lunch',
-  'dinner',
-  'brunch',
-  'reading',
-  'volunteering',
-  'comedy',
-  'games',
-  'clubbing',
-  'fests_fairs',
-  'sightseeing',
-  'nightlife',
-  'meetup',
-  'other',
-] as const;
-
-type CategoryKey = (typeof categories)[number];
-
-const CATEGORY_IMAGES: Record<CategoryKey, string> = {
-  movies: '/assets/movie.png',
-  sports: '/assets/sports.png',
-  walk: '/assets/walk.png',
-  run: '/assets/walk.png',
-  coffee_tea: '/assets/coffee.png',
-  travel: '/assets/travel.png',
-  share_ride: '/assets/travel.png',
-  lunch: '/assets/food.png',
-  dinner: '/assets/food.png',
-  brunch: '/assets/food.png',
-  reading: '/assets/reading.png',
-  volunteering: '/assets/volunteering.png',
-  comedy: '/assets/comedy.png',
-  games: '/assets/games.png',
-  clubbing: '/assets/clubbing.png',
-  fests_fairs: '/assets/fair.png',
-  sightseeing: '/assets/fair.png',
-  nightlife: '/assets/night-life.png',
-  meetup: '/assets/games.png',
-  other: '/assets/fair.png',
+type MyChatsResponse = {
+  active: ChatRoomCard[];
+  archived: ChatRoomCard[];
 };
 
-const getCoverImage = (event: EventDetail) => {
-  if (event.photos?.length) return event.photos[0];
-  const key = event.category.toLowerCase() as CategoryKey;
-  return CATEGORY_IMAGES[key] || '/assets/fair.png';
-};
+function patchMyChatsCache(
+  current: MyChatsResponse | undefined,
+  eventId: number,
+  update: (chat: ChatRoomCard) => ChatRoomCard
+) {
+  if (!current) return current;
+
+  const patch = (list: ChatRoomCard[]) =>
+    list.map((chat) => (chat.eventId === eventId ? update(chat) : chat));
+
+  return {
+    active: patch(current.active),
+    archived: patch(current.archived),
+  };
+}
 
 const formatCategory = (cat: string) => {
   return cat
@@ -193,6 +173,7 @@ const formatCategory = (cat: string) => {
 
 export default function EventDetailClient({ id }: EventDetailClientProps) {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const { user } = useContext(AuthContext);
   const [event, setEvent] = useState<EventDetail | null>(null);
   const [loading, setLoading] = useState(true);
@@ -200,6 +181,7 @@ export default function EventDetailClient({ id }: EventDetailClientProps) {
   const [showJoinDialog, setShowJoinDialog] = useState(false);
   const [showUnjoinDialog, setShowUnjoinDialog] = useState(false);
   const [showCancelDialog, setShowCancelDialog] = useState(false);
+  const [isSubmittingJoin, setIsSubmittingJoin] = useState(false);
 
   const [isShareOpen, setIsShareOpen] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
@@ -209,8 +191,8 @@ export default function EventDetailClient({ id }: EventDetailClientProps) {
   );
 
   const [joinRequests, setJoinRequests] = useState<JoinRequest[]>([]);
-  const [requestsLoading, setRequestsLoading] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [fallbackCoverImage, setFallbackCoverImage] = useState<string | null>(null);
 
   useEffect(() => {
     if (toastMessage) {
@@ -235,6 +217,21 @@ export default function EventDetailClient({ id }: EventDetailClientProps) {
         const res = await getEvent(id);
         const ev: EventDetail = res.data.event;
         setEvent(ev);
+
+        if (!ev.photos?.length) {
+          const categoryQuery = getCategoryImageQuery(ev.category);
+          setFallbackCoverImage(getUnsplashSourceImage(categoryQuery));
+          try {
+            const suggestions = await searchUnsplashPhotos({ query: categoryQuery, perPage: 1 });
+            if (suggestions[0]) {
+              setFallbackCoverImage(suggestions[0].regularUrl);
+            }
+          } catch (err) {
+            console.error('Failed to fetch Unsplash cover suggestion', err);
+          }
+        } else {
+          setFallbackCoverImage(null);
+        }
 
         if (!user) return;
 
@@ -265,14 +262,11 @@ export default function EventDetailClient({ id }: EventDetailClientProps) {
   }, [id, user]);
 
   const fetchJoinRequests = async (eventId: number) => {
-    setRequestsLoading(true);
     try {
       const res = await getEventJoinRequests(eventId);
       setJoinRequests(res.data.requests);
     } catch (e) {
       console.error('Failed to load requests', e);
-    } finally {
-      setRequestsLoading(false);
     }
   };
 
@@ -281,6 +275,11 @@ export default function EventDetailClient({ id }: EventDetailClientProps) {
     try {
       if (action === 'approve') {
         await approveJoinRequest(event.id, profileId);
+        notifyJoinRequestApproved({
+          eventId: event.id,
+          eventTitle: event.title,
+          targetProfileId: profileId,
+        });
         launchConfetti();
       } else {
         await rejectJoinRequest(event.id, profileId);
@@ -290,7 +289,7 @@ export default function EventDetailClient({ id }: EventDetailClientProps) {
         const res = await getEvent(id);
         setEvent(res.data.event);
       }
-    } catch (e) {
+    } catch {
       setToastMessage('Too popular! This hangout is full');
     }
   };
@@ -299,10 +298,19 @@ export default function EventDetailClient({ id }: EventDetailClientProps) {
     if (!event) return;
     try {
       await cancelHostedEvent(event.id);
+      notifyHangoutCancelled({ eventId: event.id, eventTitle: event.title });
       setEvent({ ...event, status: 'CANCELLED' });
+      queryClient.setQueryData<MyChatsResponse>(['myChats'], (current) =>
+        patchMyChatsCache(current, event.id, (chat) => ({
+          ...chat,
+          eventStatus: 'CANCELLED',
+          roomStatus: 'ARCHIVED',
+        }))
+      );
+      queryClient.invalidateQueries({ queryKey: ['myChats'] });
       setToastMessage('Hangout has been cancelled.');
       setShowCancelDialog(false);
-    } catch (e) {
+    } catch {
       setToastMessage('Failed to cancel hangout.');
     }
   };
@@ -311,8 +319,12 @@ export default function EventDetailClient({ id }: EventDetailClientProps) {
     const next = !isLiked;
     setIsLiked(next);
     try {
-      next ? await likeEvent(id) : await unlikeEvent(id);
-    } catch (err) {
+      if (next) {
+        await likeEvent(id);
+      } else {
+        await unlikeEvent(id);
+      }
+    } catch {
       setIsLiked(!next);
     }
   };
@@ -396,12 +408,25 @@ export default function EventDetailClient({ id }: EventDetailClientProps) {
       </div>
     );
   if (!event)
-    return <div className="p-10 text-center text-muted-foreground">Hangout not found.</div>;
+    return (
+      <div className="px-4 py-10">
+        <EmptyState
+          illustrationSrc="/assets/illustrations/no-hangouts.png"
+          title="Hangout not found"
+          description="This hangout may have been removed or is no longer available."
+          action={{ href: '/', label: 'Browse Hangouts' }}
+          className="my-0"
+        />
+      </div>
+    );
 
   const isHost = user?.profileId === event.host.id;
   const eventDate = new Date(event.datetime);
   const attendeesCount = event.attendees.length;
-  const coverImage = getCoverImage(event);
+  const coverImage =
+    event.photos?.[0] ||
+    fallbackCoverImage ||
+    getUnsplashSourceImage(getCategoryImageQuery(event.category));
 
   const isPast = eventDate < new Date();
   const isFull = attendeesCount >= event.maxAttendees;
@@ -416,11 +441,7 @@ export default function EventDetailClient({ id }: EventDetailClientProps) {
         'w-full font-medium text-base h-12 transition-all rounded-xl',
         isCancelled || isPast || isCompleted
           ? 'bg-muted text-muted-foreground cursor-not-allowed hover:bg-muted'
-          : requestStatus === 'JOINED'
-            ? 'bg-green-600 hover:bg-green-700 text-white'
-            : requestStatus === 'REQUESTED'
-              ? 'bg-indigo-600 hover:bg-indigo-700 text-white'
-              : 'bg-foreground text-background hover:bg-foreground/90'
+          : 'bg-black text-white hover:bg-black/90 dark:bg-foreground dark:text-background dark:hover:bg-foreground/90'
       )}
       disabled={isHost || isCancelled || isPast || (isFull && requestStatus === 'NONE')}
       onClick={() => {
@@ -880,11 +901,25 @@ export default function EventDetailClient({ id }: EventDetailClientProps) {
       <JoinEventDialog
         open={showJoinDialog}
         onClose={() => setShowJoinDialog(false)}
+        isSubmitting={isSubmittingJoin}
         onSubmit={async (message: string) => {
-          await joinEvent(event.id, message);
-          setRequestStatus('REQUESTED');
-          setShowJoinDialog(false);
-          launchConfetti();
+          setIsSubmittingJoin(true);
+          try {
+            await joinEvent(event.id, message);
+            notifyJoinRequestSubmitted({ eventId: event.id, eventTitle: event.title, message });
+            setRequestStatus('REQUESTED');
+            queryClient.invalidateQueries({ queryKey: ['my-joined'] });
+            queryClient.invalidateQueries({ queryKey: ['events'] });
+            setShowJoinDialog(false);
+            launchConfetti();
+          } catch (err) {
+            const error = err as ApiError;
+            setToastMessage(
+              error.response?.data?.error || 'Unable to send request right now. Please try again.'
+            );
+          } finally {
+            setIsSubmittingJoin(false);
+          }
         }}
       />
       <ConfirmUnjoinDialog
@@ -892,6 +927,14 @@ export default function EventDetailClient({ id }: EventDetailClientProps) {
         onClose={() => setShowUnjoinDialog(false)}
         onConfirm={async () => {
           await cancelJoinEvent(event.id);
+          queryClient.setQueryData<MyChatsResponse>(['myChats'], (current) =>
+            patchMyChatsCache(current, event.id, (chat) => ({
+              ...chat,
+              isRemoved: true,
+              roomStatus: 'ARCHIVED',
+            }))
+          );
+          queryClient.invalidateQueries({ queryKey: ['myChats'] });
           setRequestStatus('NONE');
           setShowUnjoinDialog(false);
         }}

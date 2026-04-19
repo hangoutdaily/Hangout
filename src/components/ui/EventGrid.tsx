@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useContext } from 'react';
+import { useState, useContext, useMemo } from 'react';
 import { useSearchParams } from 'next/navigation';
 import EventCard from './EventCard';
 import { useEvents, useLikeMutation, useUnlikeMutation } from '@/hooks/useEvents';
@@ -15,6 +15,8 @@ import { AuthContext } from '@/context/AuthContext';
 import JoinEventDialog from '../layout/JoinEventDialog';
 import ConfirmUnjoinDialog from '../layout/ConfirmUnjoinDialog';
 import { isHostOfEvent } from '@/lib/utils';
+import { EmptyState } from './EmptyState';
+import { ApiError } from '@/types';
 
 export function formatCategory(cat: string) {
   return cat
@@ -55,8 +57,6 @@ export default function EventGrid() {
   const { data: eventsData, isLoading: eventsLoading } = useEvents({
     search,
     category,
-    time,
-    date,
   });
   const { data: likesData } = useMyLikes();
   const { data: joinedData } = useMyJoinedEvents();
@@ -68,9 +68,42 @@ export default function EventGrid() {
 
   const [joinDialogFor, setJoinDialogFor] = useState<number | null>(null);
   const [unjoinDialogFor, setUnjoinDialogFor] = useState<number | null>(null);
+  const [joinErrorMessage, setJoinErrorMessage] = useState<string | null>(null);
+  const [isSubmittingJoin, setIsSubmittingJoin] = useState(false);
   const { user } = useContext(AuthContext);
 
-  const events = eventsData?.events || [];
+  const events = useMemo(() => eventsData?.events || [], [eventsData?.events]);
+  const filteredEvents = useMemo(() => {
+    return events.filter((event: FetchedEvent) => {
+      const eventDateTime = new Date(event.datetime);
+
+      if (date) {
+        const [y, m, d] = date.split('-').map(Number);
+        if (
+          Number.isFinite(y) &&
+          Number.isFinite(m) &&
+          Number.isFinite(d) &&
+          (eventDateTime.getFullYear() !== y ||
+            eventDateTime.getMonth() + 1 !== m ||
+            eventDateTime.getDate() !== d)
+        ) {
+          return false;
+        }
+      }
+
+      if (time) {
+        const hour = eventDateTime.getHours();
+        const matchesTime =
+          (time === 'morning' && hour >= 5 && hour < 12) ||
+          (time === 'afternoon' && hour >= 12 && hour < 17) ||
+          (time === 'evening' && hour >= 17 && hour < 21) ||
+          (time === 'night' && (hour >= 21 || hour < 5));
+        if (!matchesTime) return false;
+      }
+
+      return true;
+    });
+  }, [events, date, time]);
   const loading = eventsLoading;
 
   const likedEvents = new Set(likesData?.likedEventIds?.map(String) || []);
@@ -103,10 +136,16 @@ export default function EventGrid() {
     );
   }
 
-  if (events.length === 0) {
+  if (filteredEvents.length === 0) {
     return (
-      <div className="mx-auto max-w-7xl px-4 text-center text-muted-foreground">
-        No hangouts found.
+      <div className="mx-auto max-w-7xl px-4">
+        <EmptyState
+          illustrationSrc="/assets/illustrations/no-hangouts.png"
+          title="No hangouts found"
+          description="Try changing your filters or nearby city to discover upcoming hangouts."
+          action={{ href: '/', label: 'Browse Hangouts' }}
+          className="my-6"
+        />
       </div>
     );
   }
@@ -115,11 +154,27 @@ export default function EventGrid() {
     <div className="mx-auto max-w-7xl px-4">
       <JoinEventDialog
         open={joinDialogFor !== null}
-        onClose={() => setJoinDialogFor(null)}
-        onSubmit={async (message) => {
-          const id = joinDialogFor!;
-          joinMutation.mutate({ id, message });
+        onClose={() => {
           setJoinDialogFor(null);
+          setJoinErrorMessage(null);
+        }}
+        isSubmitting={isSubmittingJoin}
+        errorMessage={joinErrorMessage}
+        onSubmit={async (message) => {
+          if (joinDialogFor == null) return;
+          setJoinErrorMessage(null);
+          setIsSubmittingJoin(true);
+          try {
+            await joinMutation.mutateAsync({ id: joinDialogFor, message });
+            setJoinDialogFor(null);
+          } catch (err) {
+            const error = err as ApiError;
+            setJoinErrorMessage(
+              error.response?.data?.error || 'Unable to send request right now. Please try again.'
+            );
+          } finally {
+            setIsSubmittingJoin(false);
+          }
         }}
       />
 
@@ -134,7 +189,7 @@ export default function EventGrid() {
       />
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {events.map((event: FetchedEvent) => {
+        {filteredEvents.map((event: FetchedEvent) => {
           const idStr = String(event.id);
           let status = joinStatus[idStr] || 'NONE';
           const isHost = isHostOfEvent(user, event.host?.id);
@@ -172,8 +227,10 @@ export default function EventGrid() {
               onJoin={() => {
                 if (!user) return (window.location.href = '/login');
                 if (isHost) return;
-                if (status === 'NONE' || status === 'REJECTED') setJoinDialogFor(event.id);
-                else setUnjoinDialogFor(event.id);
+                if (status === 'NONE' || status === 'REJECTED') {
+                  setJoinErrorMessage(null);
+                  setJoinDialogFor(event.id);
+                } else setUnjoinDialogFor(event.id);
               }}
             />
           );

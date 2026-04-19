@@ -2,12 +2,9 @@ import WishlistGrid from '@/components/ui/WishlistGrid';
 
 export default function WishlistPage() {
   return (
-    <div className="font-sans min-h-screen bg-background">
-      <div className="mx-auto max-w-7xl px-6 mt-10 mb-4">
-        <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-foreground">
-          My Hangouts
-        </h1>
-        <p className="text-muted-foreground mt-1">Manage your upcoming plans and saved hangouts.</p>
+    <div className="min-h-screen bg-background">
+      <div className="mx-auto max-w-7xl px-4 pt-4 pb-2">
+        <h1 className="text-2xl font-medium tracking-tight">My Hangouts</h1>
       </div>
       <section className="pt-2 pb-20 md:pb-10">
         <WishlistGrid />
