@@ -122,7 +122,7 @@ export default function ChatsPage() {
 
   if (!user) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center px-4">
+      <div className="min-h-screen bg-background flex justify-center items-start px-4">
         <EmptyState
           illustrationSrc="/assets/illustrations/no-login.png"
           title="Sign in to chat"

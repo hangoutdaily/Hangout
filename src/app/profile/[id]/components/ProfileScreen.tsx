@@ -181,7 +181,7 @@ export default function ProfileScreen({ id }: ProfileScreenProps) {
 
   if (!user && !id) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center px-4">
+      <div className="min-h-screen bg-background flex items-center justify-center items-start px-4">
         <EmptyState
           illustrationSrc="/assets/illustrations/no-login.png"
           title="Sign in to view your profile"
@@ -195,7 +195,7 @@ export default function ProfileScreen({ id }: ProfileScreenProps) {
 
   if (id && !user) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center px-4">
+      <div className="min-h-screen bg-background flex items-center justify-center items-start px-4">
         <EmptyState
           illustrationSrc="/assets/illustrations/no-login.png"
           title="Sign in to view this profile"

@@ -158,13 +158,15 @@ export default function MyHangoutsGrid() {
 
   if (!user) {
     return (
-      <EmptyState
-        illustrationSrc="/assets/illustrations/no-login.png"
-        title="Sign in to view My Hangouts"
-        description="Log in or create an account to track your upcoming and favorite hangouts."
-        showSignIn
-        className="my-6"
-      />
+      <div className="min-h-screen bg-background flex items-center justify-center items-start px-4">
+        <EmptyState
+          illustrationSrc="/assets/illustrations/no-login.png"
+          title="Sign in to view My Hangouts"
+          description="Log in or create an account to track your upcoming and favorite hangouts."
+          showSignIn
+          className="my-6"
+        />
+      </div>
     );
   }
 
